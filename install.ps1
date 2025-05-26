@@ -2,7 +2,7 @@ param (
     [Parameter(HelpMessage = 'The version of bebopc to install')]
     [string]$bebopcVersion = '3.1.3',
     [Parameter(HelpMessage = 'The URL where bebpc artifacts will be fetched from')]
-    [string]$manifestUrl = "https://api.github.com/repos/betwixt-labs/bebop/releases/tags/v${bebopcVersion}"
+    [string]$manifestUrl = "https://api.github.com/repos/6over3/bebop/releases/tags/v${bebopcVersion}"
 )
 
 $COLLISION_UTF8 = [char]::ConvertFromUtf32(0x1F645)

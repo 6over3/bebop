@@ -2,7 +2,7 @@
 #
 # Bebop: an extremely simple, fast, efficient, cross-platform serialization format
 # this script is responsible for installing /updating the Bebop compiler
-# https://github.com/betwixt-labs/bebop
+# https://github.com/6over3/bebop
 #
 # The Apache License 2.0 License
 
@@ -21,7 +21,7 @@ fi
 
 ### Constants
 readonly BEBOPC_VERSION="${1:-3.1.3}"
-readonly BEBOP_RELEASE_URL="https://api.github.com/repos/betwixt-labs/bebop/releases/tags/v${BEBOPC_VERSION}"
+readonly BEBOP_RELEASE_URL="https://api.github.com/repos/6over3/bebop/releases/tags/v${BEBOPC_VERSION}"
 
 ### string formatters
 
