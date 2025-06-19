@@ -82,6 +82,29 @@ namespace Core.Generators
             return this;
         }
 
+        public IndentedStringBuilder RegionBlock(string regionStart, int spaces, Action<IndentedStringBuilder> fn,
+            string endRegion)
+        {
+            AppendLine();
+            AppendLine(regionStart);
+            AppendLine();
+
+            var regionBuilder = new IndentedStringBuilder(Spaces + spaces);
+            fn(regionBuilder);
+            var regionContent = regionBuilder.ToString().Trim();
+
+            if (!string.IsNullOrEmpty(regionContent))
+            {
+                Builder.Append(regionContent);
+            }
+
+            AppendLine();
+            AppendLine();
+            AppendLine(endRegion);
+            AppendLine();
+            return this;
+        }
+
         /// <summary>
         /// Write a new scope and take a lambda to write to the builder within it. This way it is easy to ensure the
         /// scope is closed correctly.
@@ -104,6 +127,44 @@ namespace Core.Generators
             Dedent(spaces);
             AppendLine(close);
             return this;
+        }
+
+        /// <summary>
+        /// Trim whitespace from the start of the accumulated content.
+        /// </summary>
+        public IndentedStringBuilder TrimStart()
+        {
+            var content = Builder.ToString().TrimStart();
+            Builder.Clear();
+            Builder.Append(content);
+            return this;
+        }
+
+        /// <summary>
+        /// Trim whitespace from the end of the accumulated content.
+        /// </summary>
+        public IndentedStringBuilder TrimEnd()
+        {
+            var content = Builder.ToString().TrimEnd();
+            Builder.Clear();
+            Builder.Append(content);
+            return this;
+        }
+
+        /// <summary>
+        /// Trim whitespace from both the start and end of the accumulated content.
+        /// </summary>
+        public IndentedStringBuilder Trim()
+        {
+            var content = Builder.ToString().Trim();
+            Builder.Clear();
+            Builder.Append(content);
+            return this;
+        }
+
+        public byte[] Encode(bool encoderShouldEmitUTF8Identifier = false){
+            var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier);
+            return encoding.GetBytes(this.ToString());
         }
 
         public override string ToString()

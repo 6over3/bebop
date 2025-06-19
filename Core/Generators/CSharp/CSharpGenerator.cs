@@ -22,8 +22,9 @@ namespace Core.Generators.CSharp
         }
 
 
-        public override ValueTask<string> Compile(BebopSchema schema, GeneratorConfig config, CancellationToken cancellationToken = default)
+        public override ValueTask<Artifact[]> Compile(BebopSchema schema, GeneratorConfig config, CancellationToken cancellationToken = default)
         {
+            var artifacts = new List<Artifact>();
             Config = config;
             Schema = schema;
             if (Version.TryParse(config.GetOptionRawValue("langVersion"), out var langVersion))
@@ -293,7 +294,9 @@ namespace Core.Generators.CSharp
                 builder.Dedent(indentStep);
                 builder.AppendLine("}");
             }
-            return ValueTask.FromResult(builder.ToString());
+
+            artifacts.Add(new Artifact(config.OutFile, builder.Encode()));
+            return ValueTask.FromResult(artifacts.ToArray());
         }
 
         #region Const
@@ -613,7 +616,7 @@ namespace Core.Generators.CSharp
                 builder.Dedent(indentStep).AppendLine("}").AppendLine();
             }
 
-            // Compiles a read-only struct which holds our union. 
+            // Compiles a read-only struct which holds our union.
             void CompileUnionStruct()
             {
                 builder.AppendLine("/// <inheritdoc />");
@@ -1352,13 +1355,6 @@ namespace Core.Generators.CSharp
         private static string As(string from, string to, string value)
         {
             return $"System.Runtime.CompilerServices.Unsafe.As<{from}, {to}>(ref System.Runtime.CompilerServices.Unsafe.AsRef({value}))";
-        }
-
-
-        public override AuxiliaryFile? GetAuxiliaryFile() => null;
-
-        public override void WriteAuxiliaryFile(string outputPath)
-        {
         }
 
         public override string Alias { get => "cs"; set => throw new NotImplementedException(); }

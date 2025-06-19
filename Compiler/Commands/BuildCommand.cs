@@ -78,24 +78,27 @@ public class BuildCommand : CliCommand
                 DiagnosticLogger.Instance.WriteSpanDiagonstics([.. Warnings, .. Errors]);
                 return Errors.Count != 0 ? BebopCompiler.Err : BebopCompiler.Ok;
             }
-            // we only want to write the warnings if we are not writing results to stdout 
+            // we only want to write the warnings if we are not writing results to stdout
             // as we concat the outputs of all generators into one stream
             if (!isStandardOut && Warnings.Count != 0)
             {
                 DiagnosticLogger.Instance.WriteSpanDiagonstics(Warnings);
             }
-            var generatedFiles = new List<GeneratedFile>();
-            foreach (var generatorConfig in config.Generators)
+            if (!isStandardOut)
             {
-                generatedFiles.Add(await compiler.BuildAsync(generatorConfig, schema, config, cancellationToken));
-            }
-            if (isStandardOut)
-            {
-                DiagnosticLogger.Instance.PrintCompilerOutput(new CompilerOutput(Warnings, Errors, [.. generatedFiles]));
+                foreach (var generator in config.Generators)
+                {
+                    BebopCompiler.EmitGeneratedFiles(await compiler.BuildAsync(generator, schema, config, cancellationToken), config);
+                }
             }
             else
             {
-                BebopCompiler.EmitGeneratedFiles(generatedFiles, config);
+                var results = new List<Artifact>();
+                foreach (var generatorConfig in config.Generators)
+                {
+                    results.AddRange((await compiler.BuildAsync(generatorConfig, schema, config, cancellationToken)).Artifacts);
+                }
+                DiagnosticLogger.Instance.PrintCompilerOutput(new CompilerOutput(Warnings, Errors, [.. results]));
             }
             return BebopCompiler.Ok;
         }

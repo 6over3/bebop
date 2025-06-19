@@ -68,6 +68,24 @@
 		<EmbeddedResource Include="..\Runtime\C++\src\bebop.hpp" />
 	</ItemGroup>
 
+
+ 
+
+	<ItemGroup>
+	  <EmbeddedResource Include="..\Runtime\C\src\bebop.h">
+	    <Link>bebop.h</Link>
+	  </EmbeddedResource>
+	</ItemGroup>
+
+
+ 
+
+	<ItemGroup>
+	  <EmbeddedResource Include="..\Runtime\C\src\bebop.c">
+	    <Link>bebop.c</Link>
+	  </EmbeddedResource>
+	</ItemGroup>
+
    <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'wasi-wasm'">
         <DefineConstants>$(DefineConstants);WASI_WASM_BUILD</DefineConstants>
     </PropertyGroup>

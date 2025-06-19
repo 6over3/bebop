@@ -297,3 +297,9 @@ dist
 playground/src/bebopc/bebopc.bin
 *.tgz
 extensions/edks/typescript/javy-cli
+Laboratory/C/gen
+Laboratory/Integration/schema.h
+Laboratory/Integration/schema.c
+Laboratory/Integration/bebop.h
+Laboratory/Integration/bebop.c
+

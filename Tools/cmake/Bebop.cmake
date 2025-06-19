@@ -1,7 +1,7 @@
 set(BEBOP_RELEASES_URL https://github.com/6over3/bebop/releases/download
     CACHE STRING "Public location of Bebop binary releases" FORCE)
 
-set(BEBOP_LANGUAGES cpp cs ts dart rust py)
+set(BEBOP_LANGUAGES cpp cs ts dart rust py c)
 
 include(FetchContent)
 

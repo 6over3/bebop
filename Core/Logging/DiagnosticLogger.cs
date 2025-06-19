@@ -181,7 +181,7 @@ public partial class DiagnosticLogger
 
     public void PrintCompilerOutput(CompilerOutput output)
     {
-        if (output.Results is { Length: > 0 })
+        if (output.Artifacts is { Length: > 0 })
         {
             _out.WriteLine(FormatCompilerOutput(output));
             _out.WriteLine(string.Empty);

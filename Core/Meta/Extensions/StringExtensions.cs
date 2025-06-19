@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Core.Lexer.Extensions;
@@ -17,7 +16,7 @@ namespace Core.Meta.Extensions
 
         public static string ReplaceLastOccurrence(this string source, string find, string replace)
         {
-            int place = source.LastIndexOf(find);
+            int place = source.LastIndexOf(find, StringComparison.Ordinal);
 
             if (place == -1)
                 return source;
@@ -189,6 +188,11 @@ namespace Core.Meta.Extensions
             return builder.ToString();
         }
 
+        public static string ToScreamingSnakeCase(this string input)
+        {
+            return input.ToSnakeCase().ToUpper();
+        }
+
         /// <summary>
         ///     Converts the specified <paramref name="input"/> string into kebab-case.
         /// </summary>
@@ -333,7 +337,7 @@ namespace Core.Meta.Extensions
             if (invalidFileNameCharIndex >= 0)
             {
                 // Adjust the index to be in the context of the full filePath, not just fileName
-                index = filePath.LastIndexOf(fileName) + invalidFileNameCharIndex;
+                index = filePath.LastIndexOf(fileName, StringComparison.Ordinal) + invalidFileNameCharIndex;
                 return false;
             }
             return true;
@@ -412,7 +416,7 @@ namespace Core.Meta.Extensions
         public static bool IsPathAttemptingTraversal(this string path)
         {
             // Split the path into segments
-            var segments = path.Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.None);
+            var segments = path.Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.None);
 
             // Keep track of the depth
             int depth = 0;

@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Chord.Common;
@@ -26,42 +28,22 @@ public class ContributedGenerator : BaseGenerator
         Name = chordGenerator.Name;
     }
 
-    public override async ValueTask<string> Compile(BebopSchema schema, GeneratorConfig config, CancellationToken cancellationToken)
+    public override async ValueTask<Artifact[]> Compile(BebopSchema schema, GeneratorConfig config, CancellationToken cancellationToken)
     {
+        var artifacts = new List<Artifact>();
         var context = new GeneratorContext(schema, config);
-        return await _extension.ChordCompileAsync(context.ToString(), cancellationToken);
-    }
+        var output = await _extension.ChordCompileAsync(context.ToString(), cancellationToken);
 
-    public override AuxiliaryFile? GetAuxiliaryFile()
-    {
+        artifacts.Add(new Artifact(config.OutFile, Encoding.UTF8.GetBytes(output)));
         if (_extension.PackedFiles is not { Count: > 0 })
         {
-            return null;
-        }
-        var packedFile = _extension.PackedFiles.Where(f => f.Alias == Alias).FirstOrDefault();
-        if (packedFile is null)
-        {
-            return null;
-        }
-        return new AuxiliaryFile(packedFile.Name, packedFile.Data);
-    }
+            if (_extension.PackedFiles.FirstOrDefault(f => f.Alias == Alias) is { } packedFile)
+            {
+                artifacts.Add(new Artifact(packedFile.Name, packedFile.Data));
+            }
 
-    public override void WriteAuxiliaryFile(string outputPath)
-    {
-        var auxiliary = GetAuxiliaryFile();
-        if (auxiliary is not null)
-        {
-            if (outputPath.IsPathAttemptingTraversal())
-            {
-                throw new CompilerException($"Output path {outputPath} is attempting to traverse the directory structure.");
-            }
-            if (auxiliary.Name.IsPathAttemptingTraversal())
-            {
-                throw new CompilerException($"Auxiliary file name {auxiliary.Name} is attempting to traverse the directory structure.");
-            }
-            var filePath = Path.GetFullPath(Path.Join(outputPath, auxiliary.Name));
-            File.WriteAllBytes(filePath, auxiliary.Content);
         }
+        return artifacts.ToArray();
     }
 
     public override string Alias { get; set; }

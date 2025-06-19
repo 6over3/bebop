@@ -379,12 +379,11 @@ public class SchemaWatcher
                 return errors.Count != 0 ? BebopCompiler.Err : BebopCompiler.Ok;
             }
             DiagnosticLogger.Instance.WriteSpanDiagonstics(warnings);
-            var generatedFiles = new List<GeneratedFile>();
             foreach (var generatorConfig in _config.Generators)
             {
-                generatedFiles.Add(await _compiler.BuildAsync(generatorConfig, schema, _config, cancellationToken));
+                var results = await _compiler.BuildAsync(generatorConfig, schema, _config, cancellationToken);
+                BebopCompiler.EmitGeneratedFiles(results, _config);
             }
-            BebopCompiler.EmitGeneratedFiles(generatedFiles, _config);
             return BebopCompiler.Ok;
         }
         catch (Exception ex)

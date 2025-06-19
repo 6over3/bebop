@@ -1,9 +1,9 @@
 import { Library } from "./schema";
 import { makelib } from "./makelib";
-import fs from "fs";
+import fs from "node:fs";
 import equal from "deep-equal";
-import { assert } from "console";
-import util from "util";
+import { assert } from "node:console";
+import util from "node:util";
 
 const buffer = fs.readFileSync(process.argv[2]);
 const de = Library.decode(buffer);

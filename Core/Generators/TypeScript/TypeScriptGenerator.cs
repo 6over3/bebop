@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -16,12 +17,14 @@ namespace Core.Generators.TypeScript
 
         public TypeScriptGenerator() : base() { }
 
-        private static string FormatDocumentation(string documentation, SchemaDecorator? deprecatedDecorator, int spaces)
+        private static string FormatDocumentation(string documentation, SchemaDecorator? deprecatedDecorator,
+            int spaces)
         {
             if (string.IsNullOrWhiteSpace(documentation) && deprecatedDecorator is null)
             {
                 return string.Empty;
             }
+
             var builder = new IndentedStringBuilder();
             builder.Indent(spaces);
             builder.AppendLine("/**");
@@ -33,10 +36,12 @@ namespace Core.Generators.TypeScript
                     builder.AppendLine($"* {line}");
                 }
             }
+
             if (deprecatedDecorator?.TryGetValue("reason", out var deprecationReason) == true)
             {
                 builder.AppendLine($"* @deprecated {deprecationReason}");
             }
+
             builder.AppendLine("*/");
             return builder.ToString();
         }
@@ -95,11 +100,13 @@ namespace Core.Generators.TypeScript
                 {
                     continue;
                 }
+
                 builder.AppendLine($"if (record.{field.NameCamelCase} !== undefined) {{");
                 builder.AppendLine($"  view.writeByte({field.ConstantValue});");
                 builder.AppendLine($"  {CompileEncodeField(field.Type, $"record.{field.NameCamelCase}")}");
                 builder.AppendLine($"}}");
             }
+
             builder.AppendLine("view.writeByte(0);");
             builder.AppendLine("const end = view.length;");
             builder.AppendLine("view.fillMessageLength(pos, end - start);");
@@ -113,6 +120,7 @@ namespace Core.Generators.TypeScript
             {
                 builder.AppendLine(CompileEncodeField(field.Type, $"record.{field.NameCamelCase}"));
             }
+
             return builder.ToString();
         }
 
@@ -129,6 +137,7 @@ namespace Core.Generators.TypeScript
                 builder.AppendLine($"    {branch.ClassName()}.encodeInto(record.value, view);");
                 builder.AppendLine($"    break;");
             }
+
             builder.AppendLine("}");
             builder.AppendLine("const end = view.length;");
             builder.AppendLine("view.fillMessageLength(pos, end - start);");
@@ -148,7 +157,8 @@ namespace Core.Generators.TypeScript
                     $"{tab}const length{depth} = {target}.length;" + nl +
                     $"{tab}view.writeUint32(length{depth});" + nl +
                     $"{tab}for (let {i} = 0; {i} < length{depth}; {i}++) {{" + nl +
-                    $"{tab}{tab}{CompileEncodeField(at.MemberType, $"{target}[{i}]", depth + 1, indentDepth + 2)}" + nl +
+                    $"{tab}{tab}{CompileEncodeField(at.MemberType, $"{target}[{i}]", depth + 1, indentDepth + 2)}" +
+                    nl +
                     $"{tab}}}" + nl +
                     $"}}",
                 MapType mt =>
@@ -214,6 +224,7 @@ namespace Core.Generators.TypeScript
                 builder.AppendLine("    break;");
                 builder.AppendLine("");
             }
+
             builder.AppendLine("  default:");
             builder.AppendLine("    view.index = end;");
             builder.AppendLine($"    return message;");
@@ -233,6 +244,7 @@ namespace Core.Generators.TypeScript
                 builder.AppendLine(CompileDecodeField(field.Type, $"field{i}"));
                 i++;
             }
+
             builder.AppendLine($"return {{");
             i = 0;
             foreach (var field in definition.Fields)
@@ -240,6 +252,7 @@ namespace Core.Generators.TypeScript
                 builder.AppendLine($"  {field.NameCamelCase}: field{i},");
                 i++;
             }
+
             builder.AppendLine("};");
             return builder.ToString();
         }
@@ -254,8 +267,10 @@ namespace Core.Generators.TypeScript
             foreach (var branch in definition.Branches)
             {
                 builder.AppendLine($"  case {branch.Discriminator}:");
-                builder.AppendLine($"    return {{ tag: {branch.Discriminator}, value: {branch.Definition.ClassName()}.readFrom(view) }};");
+                builder.AppendLine(
+                    $"    return {{ tag: {branch.Discriminator}, value: {branch.Definition.ClassName()}.readFrom(view) }};");
             }
+
             builder.AppendLine("  default:");
             builder.AppendLine("    view.index = end;");
             builder.AppendLine($"    throw new BebopRuntimeError(`Unknown union discriminator: ${{tag}}`);");
@@ -350,6 +365,7 @@ namespace Core.Generators.TypeScript
                 case DefinedType dt:
                     return dt.ClassName;
             }
+
             throw new InvalidOperationException($"GetTypeName: {type}");
         }
 
@@ -378,11 +394,13 @@ namespace Core.Generators.TypeScript
         /// <summary>
         /// Generate code for a Bebop schema.
         /// </summary>
-        public override ValueTask<string> Compile(BebopSchema schema, GeneratorConfig config, CancellationToken cancellationToken = default)
+        public override ValueTask<Artifact[]> Compile(BebopSchema schema, GeneratorConfig config,
+            CancellationToken cancellationToken = default)
         {
             Schema = schema;
             Config = config;
             var builder = new IndentedStringBuilder();
+            var artifacts = new List<Artifact>();
 
             if (Config.EmitNotice)
             {
@@ -390,16 +408,19 @@ namespace Core.Generators.TypeScript
             }
 
             builder.AppendLine("import { BebopView, BebopRuntimeError, BebopRecord } from \"bebop\";");
-            if (Schema.Definitions.Values.OfType<ServiceDefinition>().Any() && Config.Services is not TempoServices.None)
+            if (Schema.Definitions.Values.OfType<ServiceDefinition>().Any() &&
+                Config.Services is not TempoServices.None)
             {
                 builder.AppendLine("import { Metadata, MethodType } from \"@tempojs/common\";");
                 if (Config.Services is TempoServices.Client or TempoServices.Both)
                 {
                     builder.AppendLine("import {  BaseClient, MethodInfo, CallOptions } from \"@tempojs/client\";");
                 }
+
                 if (Config.Services is TempoServices.Server or TempoServices.Both)
                 {
-                    builder.AppendLine("import { ServiceRegistry, BaseService, ServerContext, BebopMethodAny, BebopMethod } from \"@tempojs/server\";");
+                    builder.AppendLine(
+                        "import { ServiceRegistry, BaseService, ServerContext, BebopMethodAny, BebopMethod } from \"@tempojs/server\";");
                 }
             }
 
@@ -413,7 +434,8 @@ namespace Core.Generators.TypeScript
 
             if (Config.EmitBinarySchema)
             {
-                builder.AppendLine(Schema.ToBinary().ConvertToString("export const BEBOP_SCHEMA = new Uint8Array ([", "]);"));
+                builder.AppendLine(Schema.ToBinary()
+                    .ConvertToString("export const BEBOP_SCHEMA = new Uint8Array ([", "]);"));
             }
 
             foreach (var definition in Schema.Definitions.Values)
@@ -448,211 +470,217 @@ namespace Core.Generators.TypeScript
                                 ? $"  {field.Name.ToPascalCase()}: {field.ConstantValue}n,"
                                 : $"  {field.Name.ToPascalCase()} = {field.ConstantValue},");
                         }
+
                         builder.AppendLine(is64Bit ? "};" : "}");
                         builder.AppendLine("");
                         break;
                     }
-                   case FieldsDefinition fd:
-{
-    // Generate interface
-    builder.AppendLine($"export interface {fd.ClassName()} {{");
-    foreach (var field in fd.Fields)
-    {
-        var type = TypeName(field.Type);
-        builder.AppendLine(FormatDocumentation(field.Documentation, field.DeprecatedDecorator, 2));
-        var optional = fd is MessageDefinition ? "?" : "";
-        var readonlyModifier = fd is StructDefinition { IsMutable: false } ? "readonly " : "";
-        builder.AppendLine($"  {readonlyModifier}{field.NameCamelCase}{optional}: {type};");
-    }
-    builder.AppendLine("}");
-    builder.AppendLine();
+                    case FieldsDefinition fd:
+                    {
+                        // Generate interface
+                        builder.AppendLine($"export interface {fd.ClassName()} {{");
+                        foreach (var field in fd.Fields)
+                        {
+                            var type = TypeName(field.Type);
+                            builder.AppendLine(FormatDocumentation(field.Documentation, field.DeprecatedDecorator, 2));
+                            var optional = fd is MessageDefinition ? "?" : "";
+                            var readonlyModifier = fd is StructDefinition { IsMutable: false } ? "readonly " : "";
+                            builder.AppendLine($"  {readonlyModifier}{field.NameCamelCase}{optional}: {type};");
+                        }
 
-    // Generate factory function with Object.assign
-    builder.AppendLine($"export const {fd.ClassName()} = /*#__PURE__*/ Object.freeze(/*#__PURE__*/ Object.assign(");
-    builder.Indent(2);
+                        builder.AppendLine("}");
+                        builder.AppendLine();
 
-    // Factory function
-    builder.AppendLine($"// Factory function");
-    builder.AppendLine($"(data: {fd.ClassName()}): {fd.ClassName()} & BebopRecord => {{");
-    builder.Indent(2);
+                        // Generate factory function with Object.assign
+                        builder.AppendLine(
+                            $"export const {fd.ClassName()} = /*#__PURE__*/ Object.freeze(/*#__PURE__*/ Object.assign(");
+                        builder.Indent(2);
+
+                        // Factory function
+                        builder.AppendLine($"// Factory function");
+                        builder.AppendLine($"(data: {fd.ClassName()}): {fd.ClassName()} & BebopRecord => {{");
+                        builder.Indent(2);
 
 
-    var returnStatement = fd is StructDefinition { IsMutable: false }
-        ? "return Object.freeze({"
-        : "return {";
+                        var returnStatement = fd is StructDefinition { IsMutable: false }
+                            ? "return Object.freeze({"
+                            : "return {";
 
-    builder.AppendLine(returnStatement);
-    builder.AppendLine("  ...data,");
-    builder.AppendLine("  encode(): Uint8Array {");
-    builder.AppendLine($"    return {fd.ClassName()}.encode(this);");
-    builder.AppendLine("  }");
-    builder.AppendLine(fd is StructDefinition { IsMutable: false }
-        ? "});"
-        : "};");
+                        builder.AppendLine(returnStatement);
+                        builder.AppendLine("  ...data,");
+                        builder.AppendLine("  encode(): Uint8Array {");
+                        builder.AppendLine($"    return {fd.ClassName()}.encode(this);");
+                        builder.AppendLine("  }");
+                        builder.AppendLine(fd is StructDefinition { IsMutable: false }
+                            ? "});"
+                            : "};");
 
-    builder.Dedent(2);
-    builder.AppendLine("},");
+                        builder.Dedent(2);
+                        builder.AppendLine("},");
 
-    // Static methods object
-    builder.AppendLine("// Static methods");
-    builder.AppendLine("{");
-    builder.Indent(2);
+                        // Static methods object
+                        builder.AppendLine("// Static methods");
+                        builder.AppendLine("{");
+                        builder.Indent(2);
 
-    // Add opcode getter if present
-    if (fd.OpcodeDecorator is not null && fd.OpcodeDecorator.TryGetValue("fourcc", out var fourcc))
-    {
-        builder.AppendLine($"get opcode(): number {{");
-        builder.Indent(2);
-        builder.AppendLine($"return {FormatOpcodeWithUnderscores(fourcc)};");
-        builder.Dedent(2);
-        builder.AppendLine("},");
-        builder.AppendLine();
-    }
+                        // Add opcode getter if present
+                        if (fd.OpcodeDecorator is not null && fd.OpcodeDecorator.TryGetValue("fourcc", out var fourcc))
+                        {
+                            builder.AppendLine($"get opcode(): number {{");
+                            builder.Indent(2);
+                            builder.AppendLine($"return {FormatOpcodeWithUnderscores(fourcc)};");
+                            builder.Dedent(2);
+                            builder.AppendLine("},");
+                            builder.AppendLine();
+                        }
 
-    // encode convenience method (object -> Uint8Array)
-    builder.AppendLine($"encode(record: {fd.ClassName()}): Uint8Array {{");
-    builder.Indent(2);
-    builder.AppendLine("const view = BebopView.getInstance();");
-    builder.AppendLine("view.startWriting();");
-    builder.AppendLine($"{fd.ClassName()}.encodeInto(record, view);");
-    builder.AppendLine("return view.toArray();");
-    builder.Dedent(2);
-    builder.AppendLine("},");
-    builder.AppendLine();
+                        // encode convenience method (object -> Uint8Array)
+                        builder.AppendLine($"encode(record: {fd.ClassName()}): Uint8Array {{");
+                        builder.Indent(2);
+                        builder.AppendLine("const view = BebopView.getInstance();");
+                        builder.AppendLine("view.startWriting();");
+                        builder.AppendLine($"{fd.ClassName()}.encodeInto(record, view);");
+                        builder.AppendLine("return view.toArray();");
+                        builder.Dedent(2);
+                        builder.AppendLine("},");
+                        builder.AppendLine();
 
-    // encodeInto method (object + view -> void)
-    builder.AppendLine($"encodeInto(record: {fd.ClassName()}, view: BebopView): void {{");
-    builder.Indent(2);
-    builder.AppendLine(CompileEncode(fd));
-    builder.Dedent(2);
-    builder.AppendLine("},");
-    builder.AppendLine();
+                        // encodeInto method (object + view -> void)
+                        builder.AppendLine($"encodeInto(record: {fd.ClassName()}, view: BebopView): void {{");
+                        builder.Indent(2);
+                        builder.AppendLine(CompileEncode(fd));
+                        builder.Dedent(2);
+                        builder.AppendLine("},");
+                        builder.AppendLine();
 
-    // decode convenience method (Uint8Array -> object)
-    builder.AppendLine($"decode(buffer: Uint8Array): {fd.ClassName()} & BebopRecord {{");
-    builder.Indent(2);
-    builder.AppendLine("const view = BebopView.getInstance();");
-    builder.AppendLine("view.startReading(buffer);");
-    builder.AppendLine($"const decoded = {fd.ClassName()}.readFrom(view);");
-    builder.AppendLine($"return {fd.ClassName()}(decoded);");
-    builder.Dedent(2);
-    builder.AppendLine("},");
-    builder.AppendLine();
+                        // decode convenience method (Uint8Array -> object)
+                        builder.AppendLine($"decode(buffer: Uint8Array): {fd.ClassName()} & BebopRecord {{");
+                        builder.Indent(2);
+                        builder.AppendLine("const view = BebopView.getInstance();");
+                        builder.AppendLine("view.startReading(buffer);");
+                        builder.AppendLine($"const decoded = {fd.ClassName()}.readFrom(view);");
+                        builder.AppendLine($"return {fd.ClassName()}(decoded);");
+                        builder.Dedent(2);
+                        builder.AppendLine("},");
+                        builder.AppendLine();
 
-    // readFrom method (view -> object)
-    builder.AppendLine($"readFrom(view: BebopView): {fd.ClassName()} {{");
-    builder.Indent(2);
-    builder.AppendLine(CompileDecode(fd));
-    builder.Dedent(2);
-    builder.AppendLine("},");
+                        // readFrom method (view -> object)
+                        builder.AppendLine($"readFrom(view: BebopView): {fd.ClassName()} {{");
+                        builder.Indent(2);
+                        builder.AppendLine(CompileDecode(fd));
+                        builder.Dedent(2);
+                        builder.AppendLine("},");
 
-    builder.Dedent(2);
-    builder.AppendLine("}");
-    builder.Dedent(2);
-    builder.AppendLine("));");
-    builder.AppendLine("");
-    break;
-}
-                  case UnionDefinition ud:
-{
-    // Generate union type
-    var unionTypes = string.Join(" | ", ud.Branches.Select(b =>
-        $"{{ tag: {b.Discriminator}, value: {b.Definition.ClassName()} }}"));
+                        builder.Dedent(2);
+                        builder.AppendLine("}");
+                        builder.Dedent(2);
+                        builder.AppendLine("));");
+                        builder.AppendLine("");
+                        break;
+                    }
+                    case UnionDefinition ud:
+                    {
+                        // Generate union type
+                        var unionTypes = string.Join(" | ", ud.Branches.Select(b =>
+                            $"{{ tag: {b.Discriminator}, value: {b.Definition.ClassName()} }}"));
 
-    builder.AppendLine($"export type {ud.ClassName()} = {unionTypes};");
-    builder.AppendLine();
+                        builder.AppendLine($"export type {ud.ClassName()} = {unionTypes};");
+                        builder.AppendLine();
 
-    // Generate factory function with Object.assign
-    builder.AppendLine($"export const {ud.ClassName()} = /*#__PURE__*/ Object.freeze(/*#__PURE__*/ Object.assign(");
-    builder.Indent(2);
+                        // Generate factory function with Object.assign
+                        builder.AppendLine(
+                            $"export const {ud.ClassName()} = /*#__PURE__*/ Object.freeze(/*#__PURE__*/ Object.assign(");
+                        builder.Indent(2);
 
-    // Factory function
-    builder.AppendLine($"// Factory function");
-    builder.AppendLine($"(data: {ud.ClassName()}): {ud.ClassName()} & BebopRecord => {{");
-    builder.Indent(2);
+                        // Factory function
+                        builder.AppendLine($"// Factory function");
+                        builder.AppendLine($"(data: {ud.ClassName()}): {ud.ClassName()} & BebopRecord => {{");
+                        builder.Indent(2);
 
-    builder.AppendLine("return {");
-    builder.AppendLine("  ...data,");
-    builder.AppendLine("  encode(): Uint8Array {");
-    builder.AppendLine($"    return {ud.ClassName()}.encode(this);");
-    builder.AppendLine("  }");
-    builder.AppendLine("};");
+                        builder.AppendLine("return {");
+                        builder.AppendLine("  ...data,");
+                        builder.AppendLine("  encode(): Uint8Array {");
+                        builder.AppendLine($"    return {ud.ClassName()}.encode(this);");
+                        builder.AppendLine("  }");
+                        builder.AppendLine("};");
 
-    builder.Dedent(2);
-    builder.AppendLine("},");
+                        builder.Dedent(2);
+                        builder.AppendLine("},");
 
-    // Static methods object
-    builder.AppendLine("// Static methods");
-    builder.AppendLine("{");
-    builder.Indent(2);
+                        // Static methods object
+                        builder.AppendLine("// Static methods");
+                        builder.AppendLine("{");
+                        builder.Indent(2);
 
-    if (ud.OpcodeDecorator is not null && ud.OpcodeDecorator.TryGetValue("fourcc", out var fourcc))
-    {
-        builder.AppendLine($"get opcode(): number {{");
-        builder.Indent(2);
-        builder.AppendLine($"return {FormatOpcodeWithUnderscores(fourcc)};");
-        builder.Dedent(2);
-        builder.AppendLine("},");
-        builder.AppendLine();
-    }
+                        if (ud.OpcodeDecorator is not null && ud.OpcodeDecorator.TryGetValue("fourcc", out var fourcc))
+                        {
+                            builder.AppendLine($"get opcode(): number {{");
+                            builder.Indent(2);
+                            builder.AppendLine($"return {FormatOpcodeWithUnderscores(fourcc)};");
+                            builder.Dedent(2);
+                            builder.AppendLine("},");
+                            builder.AppendLine();
+                        }
 
-    // Helper methods for each branch
-    foreach (var branch in ud.Branches)
-    {
-        builder.AppendLine($"from{branch.Definition.ClassName()}(value: {branch.Definition.ClassName()}): {ud.ClassName()} & BebopRecord {{");
-        builder.Indent(2);
-        builder.AppendLine($"return {ud.ClassName()}({{ tag: {branch.Discriminator}, value }});");
-        builder.Dedent(2);
-        builder.AppendLine("},");
-        builder.AppendLine();
-    }
+                        // Helper methods for each branch
+                        foreach (var branch in ud.Branches)
+                        {
+                            builder.AppendLine(
+                                $"from{branch.Definition.ClassName()}(value: {branch.Definition.ClassName()}): {ud.ClassName()} & BebopRecord {{");
+                            builder.Indent(2);
+                            builder.AppendLine($"return {ud.ClassName()}({{ tag: {branch.Discriminator}, value }});");
+                            builder.Dedent(2);
+                            builder.AppendLine("},");
+                            builder.AppendLine();
+                        }
 
-    // encode convenience method (object -> Uint8Array)
-    builder.AppendLine($"encode(record: {ud.ClassName()}): Uint8Array {{");
-    builder.Indent(2);
-    builder.AppendLine("const view = BebopView.getInstance();");
-    builder.AppendLine("view.startWriting();");
-    builder.AppendLine($"{ud.ClassName()}.encodeInto(record, view);");
-    builder.AppendLine("return view.toArray();");
-    builder.Dedent(2);
-    builder.AppendLine("},");
-    builder.AppendLine();
+                        // encode convenience method (object -> Uint8Array)
+                        builder.AppendLine($"encode(record: {ud.ClassName()}): Uint8Array {{");
+                        builder.Indent(2);
+                        builder.AppendLine("const view = BebopView.getInstance();");
+                        builder.AppendLine("view.startWriting();");
+                        builder.AppendLine($"{ud.ClassName()}.encodeInto(record, view);");
+                        builder.AppendLine("return view.toArray();");
+                        builder.Dedent(2);
+                        builder.AppendLine("},");
+                        builder.AppendLine();
 
-    // encodeInto method (object + view -> void)
-    builder.AppendLine($"encodeInto(record: {ud.ClassName()}, view: BebopView): void {{");
-    builder.Indent(2);
-    builder.AppendLine(CompileEncode(ud));
-    builder.Dedent(2);
-    builder.AppendLine("},");
-    builder.AppendLine();
+                        // encodeInto method (object + view -> void)
+                        builder.AppendLine($"encodeInto(record: {ud.ClassName()}, view: BebopView): void {{");
+                        builder.Indent(2);
+                        builder.AppendLine(CompileEncode(ud));
+                        builder.Dedent(2);
+                        builder.AppendLine("},");
+                        builder.AppendLine();
 
-    // decode convenience method (Uint8Array -> object)
-    builder.AppendLine($"decode(buffer: Uint8Array): {ud.ClassName()} & BebopRecord {{");
-    builder.Indent(2);
-    builder.AppendLine("const view = BebopView.getInstance();");
-    builder.AppendLine("view.startReading(buffer);");
-    builder.AppendLine($"const decoded = {ud.ClassName()}.readFrom(view);");
-    builder.AppendLine($"return {ud.ClassName()}(decoded);");
-    builder.Dedent(2);
-    builder.AppendLine("},");
-    builder.AppendLine();
+                        // decode convenience method (Uint8Array -> object)
+                        builder.AppendLine($"decode(buffer: Uint8Array): {ud.ClassName()} & BebopRecord {{");
+                        builder.Indent(2);
+                        builder.AppendLine("const view = BebopView.getInstance();");
+                        builder.AppendLine("view.startReading(buffer);");
+                        builder.AppendLine($"const decoded = {ud.ClassName()}.readFrom(view);");
+                        builder.AppendLine($"return {ud.ClassName()}(decoded);");
+                        builder.Dedent(2);
+                        builder.AppendLine("},");
+                        builder.AppendLine();
 
-    // readFrom method (view -> object)
-    builder.AppendLine($"readFrom(view: BebopView): {ud.ClassName()} {{");
-    builder.Indent(2);
-    builder.AppendLine(CompileDecode(ud));
-    builder.Dedent(2);
-    builder.AppendLine("},");
+                        // readFrom method (view -> object)
+                        builder.AppendLine($"readFrom(view: BebopView): {ud.ClassName()} {{");
+                        builder.Indent(2);
+                        builder.AppendLine(CompileDecode(ud));
+                        builder.Dedent(2);
+                        builder.AppendLine("},");
 
-    builder.Dedent(2);
-    builder.AppendLine("}");
-    builder.Dedent(2);
-    builder.AppendLine("));");
-    builder.AppendLine("");
-    break;
-}
+                        builder.Dedent(2);
+                        builder.AppendLine("}");
+                        builder.Dedent(2);
+                        builder.AppendLine("));");
+                        builder.AppendLine("");
+                        break;
+                    }
                     case ConstDefinition cd:
-                        builder.AppendLine($"export const {cd.Name}: {TypeName(cd.Value.Type)} = {EmitLiteral(cd.Value)};");
+                        builder.AppendLine(
+                            $"export const {cd.Name}: {TypeName(cd.Value.Type)} = {EmitLiteral(cd.Value)};");
                         builder.AppendLine("");
                         break;
                     case ServiceDefinition:
@@ -673,70 +701,83 @@ namespace Core.Generators.TypeScript
                     {
                         if (!string.IsNullOrWhiteSpace(service.Documentation))
                         {
-                            builder.AppendLine(FormatDocumentation(service.Documentation, service.DeprecatedDecorator, 0));
+                            builder.AppendLine(FormatDocumentation(service.Documentation, service.DeprecatedDecorator,
+                                0));
                         }
-                        builder.CodeBlock($"export abstract class {service.BaseClassName()} extends BaseService", IndentStep, () =>
-                        {
-                            builder.AppendLine($"public static readonly serviceName = '{service.ClassName()}';");
-                            foreach (var method in service.Methods)
+
+                        builder.CodeBlock($"export abstract class {service.BaseClassName()} extends BaseService",
+                            IndentStep, () =>
                             {
-                                var methodType = method.Definition.Type;
-                                if (!string.IsNullOrWhiteSpace(method.Documentation))
+                                builder.AppendLine($"public static readonly serviceName = '{service.ClassName()}';");
+                                foreach (var method in service.Methods)
                                 {
+                                    var methodType = method.Definition.Type;
+                                    if (!string.IsNullOrWhiteSpace(method.Documentation))
+                                    {
+                                        builder.AppendLine(FormatDocumentation(method.Documentation,
+                                            method.DeprecatedDecorator, 0));
+                                    }
 
-                                    builder.AppendLine(FormatDocumentation(method.Documentation, method.DeprecatedDecorator, 0));
+                                    if (methodType is MethodType.Unary)
+                                    {
+                                        builder.AppendLine(
+                                            $"public abstract {method.Definition.Name.ToCamelCase()}(record: {method.Definition.RequestDefinition}, context: ServerContext): Promise<{method.Definition.ResponseDefintion}>;");
+                                    }
+                                    else if (methodType is MethodType.ClientStream)
+                                    {
+                                        builder.AppendLine(
+                                            $"public abstract {method.Definition.Name.ToCamelCase()}(records: () => AsyncGenerator<{method.Definition.RequestDefinition}, void, undefined>, context: ServerContext): Promise<{method.Definition.ResponseDefintion}>;");
+                                    }
+                                    else if (methodType is MethodType.ServerStream)
+                                    {
+                                        builder.AppendLine(
+                                            $"public abstract {method.Definition.Name.ToCamelCase()}(record: {method.Definition.RequestDefinition}, context: ServerContext): AsyncGenerator<{method.Definition.ResponseDefintion}, void, undefined>;");
+                                    }
+                                    else if (methodType is MethodType.DuplexStream)
+                                    {
+                                        builder.AppendLine(
+                                            $"public abstract {method.Definition.Name.ToCamelCase()}(records: () => AsyncGenerator<{method.Definition.RequestDefinition}, void, undefined>, context: ServerContext): AsyncGenerator<{method.Definition.ResponseDefintion}, void, undefined>;");
+                                    }
+                                    else
+                                    {
+                                        throw new InvalidOperationException($"Unsupported method type {methodType}");
+                                    }
                                 }
-                                if (methodType is MethodType.Unary)
-                                {
-                                    builder.AppendLine($"public abstract {method.Definition.Name.ToCamelCase()}(record: {method.Definition.RequestDefinition}, context: ServerContext): Promise<{method.Definition.ResponseDefintion}>;");
-                                }
-                                else if (methodType is MethodType.ClientStream)
-                                {
-                                    builder.AppendLine($"public abstract {method.Definition.Name.ToCamelCase()}(records: () => AsyncGenerator<{method.Definition.RequestDefinition}, void, undefined>, context: ServerContext): Promise<{method.Definition.ResponseDefintion}>;");
-                                }
-                                else if (methodType is MethodType.ServerStream)
-                                {
-                                    builder.AppendLine($"public abstract {method.Definition.Name.ToCamelCase()}(record: {method.Definition.RequestDefinition}, context: ServerContext): AsyncGenerator<{method.Definition.ResponseDefintion}, void, undefined>;");
-                                }
-                                else if (methodType is MethodType.DuplexStream)
-                                {
-                                    builder.AppendLine($"public abstract {method.Definition.Name.ToCamelCase()}(records: () => AsyncGenerator<{method.Definition.RequestDefinition}, void, undefined>, context: ServerContext): AsyncGenerator<{method.Definition.ResponseDefintion}, void, undefined>;");
-                                }
-                                else
-                                {
-                                    throw new InvalidOperationException($"Unsupported method type {methodType}");
-                                }
-
-                            }
-                        });
+                            });
                         builder.AppendLine();
                     }
 
                     builder.CodeBlock("export class TempoServiceRegistry extends ServiceRegistry", IndentStep, () =>
                     {
-                        builder.AppendLine("private static readonly staticServiceInstances: Map<string, BaseService> = new Map<string, BaseService>();");
+                        builder.AppendLine(
+                            "private static readonly staticServiceInstances: Map<string, BaseService> = new Map<string, BaseService>();");
                         builder.CodeBlock("public static register(serviceName: string)", IndentStep, () =>
                         {
                             builder.CodeBlock("return (constructor: Function) =>", IndentStep, () =>
                             {
                                 builder.AppendLine("const service = Reflect.construct(constructor, [undefined]);");
-                                builder.CodeBlock("if (TempoServiceRegistry.staticServiceInstances.has(serviceName))", IndentStep, () =>
-                                {
-                                    builder.AppendLine("throw new BebopRuntimeError(`Duplicate service registered: ${serviceName}`);");
-                                });
-                                builder.AppendLine("TempoServiceRegistry.staticServiceInstances.set(serviceName, service);");
+                                builder.CodeBlock("if (TempoServiceRegistry.staticServiceInstances.has(serviceName))",
+                                    IndentStep, () =>
+                                    {
+                                        builder.AppendLine(
+                                            "throw new BebopRuntimeError(`Duplicate service registered: ${serviceName}`);");
+                                    });
+                                builder.AppendLine(
+                                    "TempoServiceRegistry.staticServiceInstances.set(serviceName, service);");
                             });
-
                         });
-                        builder.CodeBlock("public static tryGetService(serviceName: string): BaseService", IndentStep, () =>
-                        {
-                            builder.AppendLine("const service = TempoServiceRegistry.staticServiceInstances.get(serviceName);");
-                            builder.CodeBlock("if (service === undefined)", IndentStep, () =>
+                        builder.CodeBlock("public static tryGetService(serviceName: string): BaseService", IndentStep,
+                            () =>
                             {
-                                builder.AppendLine("throw new BebopRuntimeError(`Unable to retreive service '${serviceName}' - it is not registered.`);");
+                                builder.AppendLine(
+                                    "const service = TempoServiceRegistry.staticServiceInstances.get(serviceName);");
+                                builder.CodeBlock("if (service === undefined)", IndentStep, () =>
+                                {
+                                    builder.AppendLine(
+                                        "throw new BebopRuntimeError(`Unable to retreive service '${serviceName}' - it is not registered.`);");
+                                });
+                                builder.AppendLine("return service;");
                             });
-                            builder.AppendLine("return service;");
-                        });
 
                         builder.AppendLine();
 
@@ -747,13 +788,14 @@ namespace Core.Generators.TypeScript
                             foreach (var service in definitions)
 
                             {
-
                                 builder.AppendLine($"serviceName = '{service.ClassName()}';");
                                 builder.AppendLine($"service = TempoServiceRegistry.tryGetService(serviceName);");
-                                builder.CodeBlock($"if (!(service instanceof {service.BaseClassName()}))", IndentStep, () =>
-                                {
-                                    builder.AppendLine("throw new BebopRuntimeError(`No service named '${serviceName}'was registered with the TempoServiceRegistry`);");
-                                });
+                                builder.CodeBlock($"if (!(service instanceof {service.BaseClassName()}))", IndentStep,
+                                    () =>
+                                    {
+                                        builder.AppendLine(
+                                            "throw new BebopRuntimeError(`No service named '${serviceName}'was registered with the TempoServiceRegistry`);");
+                                    });
                                 builder.AppendLine($"service.setLogger(this.logger.clone(serviceName));");
                                 builder.AppendLine("TempoServiceRegistry.staticServiceInstances.delete(serviceName);");
                                 builder.AppendLine("this.serviceInstances.push(service);");
@@ -764,20 +806,25 @@ namespace Core.Generators.TypeScript
                                     builder.CodeBlock($"if (this.methods.has({method.Id}))", IndentStep, () =>
                                     {
                                         builder.AppendLine($"const conflictService = this.methods.get({method.Id})!;");
-                                        builder.AppendLine($"throw new BebopRuntimeError(`{service.ClassName()}.{methodName} collides with ${{conflictService.service}}.${{conflictService.name}}`)");
+                                        builder.AppendLine(
+                                            $"throw new BebopRuntimeError(`{service.ClassName()}.{methodName} collides with ${{conflictService.service}}.${{conflictService.name}}`)");
                                     });
                                     builder.CodeBlock($"this.methods.set({method.Id},", IndentStep, () =>
-                                    {
-                                        builder.AppendLine($"name: '{methodName}',");
-                                        builder.AppendLine($"service: serviceName,");
-                                        builder.AppendLine($"invoke: service.{methodName},");
-                                        builder.AppendLine($"serialize: {method.Definition.ResponseDefintion}.encode,");
-                                        builder.AppendLine($"deserialize: {method.Definition.RequestDefinition}.decode,");
-                                        builder.AppendLine($"type: MethodType.{RpcSchema.GetMethodTypeName(methodType)},");
-                                    }, close: $"}} as BebopMethod<{method.Definition.RequestDefinition}, {method.Definition.ResponseDefintion}>);");
+                                        {
+                                            builder.AppendLine($"name: '{methodName}',");
+                                            builder.AppendLine($"service: serviceName,");
+                                            builder.AppendLine($"invoke: service.{methodName},");
+                                            builder.AppendLine(
+                                                $"serialize: {method.Definition.ResponseDefintion}.encode,");
+                                            builder.AppendLine(
+                                                $"deserialize: {method.Definition.RequestDefinition}.decode,");
+                                            builder.AppendLine(
+                                                $"type: MethodType.{RpcSchema.GetMethodTypeName(methodType)},");
+                                        },
+                                        close:
+                                        $"}} as BebopMethod<{method.Definition.RequestDefinition}, {method.Definition.ResponseDefintion}>);");
                                 }
                             }
-
                         });
 
                         builder.AppendLine();
@@ -786,8 +833,6 @@ namespace Core.Generators.TypeScript
                             builder.AppendLine("return this.methods.get(id);");
                         });
                     });
-
-
                 }
 
                 if (Config.Services is TempoServices.Client or TempoServices.Both)
@@ -796,10 +841,16 @@ namespace Core.Generators.TypeScript
                     {
                         return definition.Type switch
                         {
-                            MethodType.Unary => (definition.RequestDefinition.ToString()!, $"Promise<{definition.ResponseDefintion}>"),
-                            MethodType.ServerStream => (definition.RequestDefinition.ToString()!, $"Promise<AsyncGenerator<{definition.ResponseDefintion}, void, undefined>>"),
-                            MethodType.ClientStream => ($"() => AsyncGenerator<{definition.RequestDefinition}, void, undefined>", $"Promise<{definition.ResponseDefintion}>"),
-                            MethodType.DuplexStream => ($"() => AsyncGenerator<{definition.RequestDefinition}, void, undefined>", $"Promise<AsyncGenerator<{definition.ResponseDefintion}, void, undefined>>"),
+                            MethodType.Unary => (definition.RequestDefinition.ToString()!,
+                                $"Promise<{definition.ResponseDefintion}>"),
+                            MethodType.ServerStream => (definition.RequestDefinition.ToString()!,
+                                $"Promise<AsyncGenerator<{definition.ResponseDefintion}, void, undefined>>"),
+                            MethodType.ClientStream => (
+                                $"() => AsyncGenerator<{definition.RequestDefinition}, void, undefined>",
+                                $"Promise<{definition.ResponseDefintion}>"),
+                            MethodType.DuplexStream => (
+                                $"() => AsyncGenerator<{definition.RequestDefinition}, void, undefined>",
+                                $"Promise<AsyncGenerator<{definition.ResponseDefintion}, void, undefined>>"),
                             _ => throw new InvalidOperationException($"Unsupported function type {definition.Type}")
                         };
                     }
@@ -813,58 +864,76 @@ namespace Core.Generators.TypeScript
                             foreach (var method in service.Methods)
                             {
                                 var (requestType, responseType) = GetFunctionTypes(method.Definition);
-                                builder.AppendLine(FormatDocumentation(method.Documentation, method.DeprecatedDecorator, 0));
-                                builder.AppendLine($"{method.Definition.Name.ToCamelCase()}(request: {requestType}): {responseType};");
-                                builder.AppendLine($"{method.Definition.Name.ToCamelCase()}(request: {requestType}, metadata: Metadata): {responseType};");
+                                builder.AppendLine(FormatDocumentation(method.Documentation, method.DeprecatedDecorator,
+                                    0));
+                                builder.AppendLine(
+                                    $"{method.Definition.Name.ToCamelCase()}(request: {requestType}): {responseType};");
+                                builder.AppendLine(
+                                    $"{method.Definition.Name.ToCamelCase()}(request: {requestType}, metadata: Metadata): {responseType};");
                             }
                         });
                         builder.AppendLine();
                         builder.AppendLine(FormatDocumentation(service.Documentation, service.DeprecatedDecorator, 0));
-                        builder.CodeBlock($"export class {clientName} extends BaseClient implements I{clientName}", IndentStep, () =>
-                        {
-                            foreach (var method in service.Methods)
+                        builder.CodeBlock($"export class {clientName} extends BaseClient implements I{clientName}",
+                            IndentStep, () =>
                             {
-                                var methodInfoName = $"{method.Definition.Name.ToCamelCase()}MethodInfo";
-                                var methodName = method.Definition.Name.ToCamelCase();
-                                var (requestType, responseType) = GetFunctionTypes(method.Definition);
-                                var methodType = method.Definition.Type;
-                                builder.CodeBlock($"private static readonly {methodInfoName}: MethodInfo<{method.Definition.RequestDefinition}, {method.Definition.ResponseDefintion}> =", IndentStep, () =>
+                                foreach (var method in service.Methods)
                                 {
-                                    builder.AppendLine($"name: '{methodName}',");
-                                    builder.AppendLine($"service: '{service.ClassName()}',");
-                                    builder.AppendLine($"id: {method.Id},");
-                                    builder.AppendLine($"serialize: {method.Definition.RequestDefinition}.encode,");
-                                    builder.AppendLine($"deserialize: {method.Definition.ResponseDefintion}.decode,");
-                                    builder.AppendLine($"type: MethodType.{RpcSchema.GetMethodTypeName(methodType)},");
-                                });
+                                    var methodInfoName = $"{method.Definition.Name.ToCamelCase()}MethodInfo";
+                                    var methodName = method.Definition.Name.ToCamelCase();
+                                    var (requestType, responseType) = GetFunctionTypes(method.Definition);
+                                    var methodType = method.Definition.Type;
+                                    builder.CodeBlock(
+                                        $"private static readonly {methodInfoName}: MethodInfo<{method.Definition.RequestDefinition}, {method.Definition.ResponseDefintion}> =",
+                                        IndentStep, () =>
+                                        {
+                                            builder.AppendLine($"name: '{methodName}',");
+                                            builder.AppendLine($"service: '{service.ClassName()}',");
+                                            builder.AppendLine($"id: {method.Id},");
+                                            builder.AppendLine(
+                                                $"serialize: {method.Definition.RequestDefinition}.encode,");
+                                            builder.AppendLine(
+                                                $"deserialize: {method.Definition.ResponseDefintion}.decode,");
+                                            builder.AppendLine(
+                                                $"type: MethodType.{RpcSchema.GetMethodTypeName(methodType)},");
+                                        });
 
-                                builder.AppendLine(FormatDocumentation(method.Documentation, method.DeprecatedDecorator, 0));
-                                builder.AppendLine($"async {methodName}(request: {requestType}): {responseType};");
-                                builder.AppendLine($"async {methodName}(request: {requestType}, options: CallOptions): {responseType};");
+                                    builder.AppendLine(FormatDocumentation(method.Documentation,
+                                        method.DeprecatedDecorator, 0));
+                                    builder.AppendLine($"async {methodName}(request: {requestType}): {responseType};");
+                                    builder.AppendLine(
+                                        $"async {methodName}(request: {requestType}, options: CallOptions): {responseType};");
 
-                                builder.CodeBlock($"async {methodName}(request: {requestType}, options?: CallOptions): {responseType}", IndentStep, () =>
-                                {
-                                    if (methodType is MethodType.Unary)
-                                    {
-                                        builder.AppendLine($"return await this.channel.startUnary(request, this.getContext(), {clientName}.{methodInfoName}, options);");
-                                    }
-                                    else if (methodType is MethodType.ServerStream)
-                                    {
-                                        builder.AppendLine($"return await this.channel.startServerStream(request, this.getContext(), {clientName}.{methodInfoName}, options);");
-                                    }
-                                    else if (methodType is MethodType.ClientStream)
-                                    {
-                                        builder.AppendLine($"return await this.channel.startClientStream(request, this.getContext(), {clientName}.{methodInfoName}, options);");
-                                    }
-                                    else if (methodType is MethodType.DuplexStream)
-                                    {
-                                        builder.AppendLine($"return await this.channel.startDuplexStream(request, this.getContext(), {clientName}.{methodInfoName}, options);");
-                                    }
-                                    else throw new InvalidOperationException($"Unsupported method type {methodType}");
-                                });
-                            }
-
-                        });
+                                    builder.CodeBlock(
+                                        $"async {methodName}(request: {requestType}, options?: CallOptions): {responseType}",
+                                        IndentStep, () =>
+                                        {
+                                            if (methodType is MethodType.Unary)
+                                            {
+                                                builder.AppendLine(
+                                                    $"return await this.channel.startUnary(request, this.getContext(), {clientName}.{methodInfoName}, options);");
+                                            }
+                                            else if (methodType is MethodType.ServerStream)
+                                            {
+                                                builder.AppendLine(
+                                                    $"return await this.channel.startServerStream(request, this.getContext(), {clientName}.{methodInfoName}, options);");
+                                            }
+                                            else if (methodType is MethodType.ClientStream)
+                                            {
+                                                builder.AppendLine(
+                                                    $"return await this.channel.startClientStream(request, this.getContext(), {clientName}.{methodInfoName}, options);");
+                                            }
+                                            else if (methodType is MethodType.DuplexStream)
+                                            {
+                                                builder.AppendLine(
+                                                    $"return await this.channel.startDuplexStream(request, this.getContext(), {clientName}.{methodInfoName}, options);");
+                                            }
+                                            else
+                                                throw new InvalidOperationException(
+                                                    $"Unsupported method type {methodType}");
+                                        });
+                                }
+                            });
                     }
                 }
             }
@@ -875,11 +944,10 @@ namespace Core.Generators.TypeScript
                 builder.AppendLine("}");
             }
 
-            return ValueTask.FromResult(builder.ToString());
-        }
+            artifacts.Add(new Artifact(config.OutFile, builder.Encode()));
 
-        public override AuxiliaryFile? GetAuxiliaryFile() => null;
-        public override void WriteAuxiliaryFile(string outputPath) { }
+            return ValueTask.FromResult(artifacts.ToArray());
+        }
 
         public override string Alias { get => "ts"; set => throw new NotImplementedException(); }
         public override string Name { get => "TypeScript"; set => throw new NotImplementedException(); }

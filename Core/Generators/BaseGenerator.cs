@@ -7,7 +7,7 @@ using Core.Meta;
 namespace Core.Generators
 {
     /// <summary>
-    /// Represents an abstract base class for generating code from Bebop schemas. 
+    /// Represents an abstract base class for generating code from Bebop schemas.
     /// This class encapsulates the common functionalities needed for various code generators.
     /// </summary>
     public abstract class BaseGenerator
@@ -33,19 +33,7 @@ namespace Core.Generators
         /// Generates code based on the provided Bebop schema.
         /// </summary>
         /// <returns>A string containing the generated code.</returns>
-        public abstract ValueTask<string> Compile(BebopSchema schema, GeneratorConfig config, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Writes auxiliary files, if any, associated with the generated code to the specified output directory.
-        /// </summary>
-        /// <param name="outputPath">The directory path where auxiliary files should be written.</param>
-        public abstract void WriteAuxiliaryFile(string outputPath);
-
-        /// <summary>
-        /// Retrieves information about any auxiliary files associated with the generated code.
-        /// </summary>
-        /// <returns>An <see cref="AuxiliaryFile"/> representing the contents and metadata of the auxiliary file, or null if there are no auxiliary files.</returns>
-        public abstract AuxiliaryFile? GetAuxiliaryFile();
+        public abstract ValueTask<Artifact[]> Compile(BebopSchema schema, GeneratorConfig config, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets the alias of the code generator, which uniquely identifies it among other generators.

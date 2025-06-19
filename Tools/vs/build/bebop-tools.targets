@@ -10,16 +10,50 @@
       <_BebopExe Condition="$([MSBuild]::IsOSPlatform('Linux')) or $([MSBuild]::IsOSPlatform('OSX'))">bebopc</_BebopExe>
       <_Bebopc>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../tools/$(_BebopOs)/$(_BebopOsArch)/$(_BebopExe)'))</_Bebopc>
       <_Bebopc Condition="'$(BebopcPathOverride)' != ''">$([System.IO.Path]::GetFullPath('$(BebopcPathOverride)'))</_Bebopc>
+      
+      <!-- Default Bebop language - can be overridden -->
+      <BebopLanguage Condition="'$(BebopLanguage)' == ''">cs</BebopLanguage>
+      
+      <!-- Default LangVersion based on language - can be overridden -->
+      <BebopLangVersion Condition="'$(BebopLangVersion)' == '' and '$(BebopLanguage)' == 'cs'">9.0</BebopLangVersion>
+      <BebopLangVersion Condition="'$(BebopLangVersion)' == '' and '$(BebopLanguage)' == 'ts'">latest</BebopLangVersion>
+      <BebopLangVersion Condition="'$(BebopLangVersion)' == '' and '$(BebopLanguage)' == 'js'">latest</BebopLangVersion>
+      <BebopLangVersion Condition="'$(BebopLangVersion)' == '' and '$(BebopLanguage)' == 'rust'">latest</BebopLangVersion>
+      <BebopLangVersion Condition="'$(BebopLangVersion)' == '' and '$(BebopLanguage)' == 'cpp'">17</BebopLangVersion>
+      <BebopLangVersion Condition="'$(BebopLangVersion)' == '' and '$(BebopLanguage)' == 'py'">latest</BebopLangVersion>
+      <BebopLangVersion Condition="'$(BebopLangVersion)' == '' and '$(BebopLanguage)' == 'dart'">latest</BebopLangVersion>
+      <BebopLangVersion Condition="'$(BebopLangVersion)' == ''">latest</BebopLangVersion>
+      
+      <!-- Default generator options - can be overridden -->
+      <BebopServices Condition="'$(BebopServices)' == ''">both</BebopServices>
+      <BebopEmitNotice Condition="'$(BebopEmitNotice)' == ''">true</BebopEmitNotice>
+      <BebopEmitBinarySchema Condition="'$(BebopEmitBinarySchema)' == ''">true</BebopEmitBinarySchema>
+      
+      <!-- Diagnostic format options -->
+      <BebopDiagnosticFormat Condition="'$(BebopDiagnosticFormat)' == ''">MSBuild</BebopDiagnosticFormat>
+      
+      <!-- Watch mode options -->
+      <BebopNoEmit Condition="'$(BebopNoEmit)' == ''">false</BebopNoEmit>
+      <BebopNoWarn Condition="'$(BebopNoWarn)' == ''"></BebopNoWarn>
     </PropertyGroup>
 	
     <ItemDefinitionGroup>
         <Bebop>
             <OutputDir>$([System.IO.Path]::GetFullPath('$([MSBuild]::EnsureTrailingSlash('$(MSBuildProjectDirectory)'))'))</OutputDir>
-            <Language>cs</Language>
-            <LogFormat>MSBuild</LogFormat>
+            <Language>$(BebopLanguage)</Language>
+            <LogFormat>$(BebopDiagnosticFormat)</LogFormat>
             <OutputFile/>
             <Namespace/>
-            <LangVersion>9.0</LangVersion>
+            <LangVersion>$(BebopLangVersion)</LangVersion>
+            <!-- Generator options -->
+            <Services>$(BebopServices)</Services>
+            <EmitNotice>$(BebopEmitNotice)</EmitNotice>
+            <EmitBinarySchema>$(BebopEmitBinarySchema)</EmitBinarySchema>
+            <!-- Custom options as semicolon-separated key=value pairs -->
+            <Options/>
+            <!-- Additional compiler flags -->
+            <NoEmit>$(BebopNoEmit)</NoEmit>
+            <NoWarn>$(BebopNoWarn)</NoWarn>
         </Bebop>
     </ItemDefinitionGroup>
 
@@ -33,17 +67,67 @@
         </PropertyGroup>
     </Target>
 
-    <Target Name="BebopPrepareForBuildDiagnostic" DependsOnTargets="ValidateBebopcCommandLine">
-        <Message Importance="high" Text="Bebop Prepare For Build Diagnostic" />
-        <Message Importance="high" Text="Bebop Compiler Path = $(_Bebopc)" />
-        <Message Importance="high" Text="Bebop Output Directory = %(Bebop.OutputDir)" />
-        <Message Importance="high" Text="Bebop Output File = %(Bebop.OutputFile)" />
-        <Message Importance="high" Text="Bebop Target Language = %(Bebop.Language)" />
-        <Message Importance="high" Text="Bebop LangVersion = %(Bebop.LangVersion)" />
-        <Message Importance="high" Text="Bebop Log Format = %(Bebop.Logformat)" />
-        <Message Importance="high" Text="Bebop Namespace = %(Bebop.Namespace)" Condition="'%(Bebop.Namespace)' != '' "/>
-        <Message Importance="high" Text="Input Schemas = $(_BebopSchemas)" Condition="'$(_BebopSchemas)' != '' "/>
-        <Message Importance="high" Text="Bebop Output = $(_BebopOutput)" />
+    <Target Name="BuildGeneratorOptions" DependsOnTargets="DefineBebopProperties">
+        <PropertyGroup>
+            <!-- Start building the generator options string -->
+            <_GeneratorOptions>%(Bebop.Language):$(_BebopOutput)</_GeneratorOptions>
+            
+            <!-- Add services if not default (compiler defaults to Both) -->
+            <_GeneratorOptions Condition="'%(Bebop.Services)' != '' and '%(Bebop.Services)' != 'both'">$(_GeneratorOptions),services=%(Bebop.Services)</_GeneratorOptions>
+            
+            <!-- Add emitNotice if not default (compiler defaults to true) -->
+            <_GeneratorOptions Condition="'%(Bebop.EmitNotice)' != '' and '%(Bebop.EmitNotice)' != 'true'">$(_GeneratorOptions),emitNotice=%(Bebop.EmitNotice)</_GeneratorOptions>
+            
+            <!-- Add emitBinarySchema if not default (compiler defaults to true) -->
+            <_GeneratorOptions Condition="'%(Bebop.EmitBinarySchema)' != '' and '%(Bebop.EmitBinarySchema)' != 'true'">$(_GeneratorOptions),emitBinarySchema=%(Bebop.EmitBinarySchema)</_GeneratorOptions>
+            
+            <!-- Add namespace if specified -->
+            <_GeneratorOptions Condition="'%(Bebop.Namespace)' != ''">$(_GeneratorOptions),namespace=%(Bebop.Namespace)</_GeneratorOptions>
+            
+            <!-- Add langVersion if specified -->
+            <_GeneratorOptions Condition="'%(Bebop.LangVersion)' != ''">$(_GeneratorOptions),langVersion=%(Bebop.LangVersion)</_GeneratorOptions>
+            
+            <!-- Add custom options if specified (semicolon-separated key=value pairs) -->
+            <_GeneratorOptions Condition="'%(Bebop.Options)' != ''">$(_GeneratorOptions),$([System.String]::Copy('%(Bebop.Options)').Replace(';', ','))</_GeneratorOptions>
+        </PropertyGroup>
+    </Target>
+
+    <Target Name="BuildCompilerFlags" DependsOnTargets="DefineBebopProperties">
+        <PropertyGroup>
+            <!-- Build compiler flags -->
+            <_CompilerFlags>--include $(_BebopSchemas) -df %(Bebop.LogFormat) build</_CompilerFlags>
+            
+            <!-- Add no-emit flag if specified -->
+            <_CompilerFlags Condition="'%(Bebop.NoEmit)' == 'true'">$(_CompilerFlags) --no-emit</_CompilerFlags>
+            
+            <!-- Add no-warn flags if specified -->
+            <_CompilerFlags Condition="'%(Bebop.NoWarn)' != ''">$(_CompilerFlags) --no-warn %(Bebop.NoWarn)</_CompilerFlags>
+            
+            <!-- Add generator options -->
+            <_CompilerFlags>$(_CompilerFlags) --generator "$(_GeneratorOptions)"</_CompilerFlags>
+        </PropertyGroup>
+    </Target>
+
+    <Target Name="BebopPrepareForBuildDiagnostic" DependsOnTargets="BuildGeneratorOptions;BuildCompilerFlags">
+        <Message Importance="high" Text="=== Bebop Build Diagnostic ===" />
+        <Message Importance="high" Text="Compiler Path: $(_Bebopc)" />
+        <Message Importance="high" Text="Output Directory: %(Bebop.OutputDir)" />
+        <Message Importance="high" Text="Output File: %(Bebop.OutputFile)" />
+        <Message Importance="high" Text="Target Language: %(Bebop.Language)" />
+        <Message Importance="high" Text="Language Version: %(Bebop.LangVersion)" />
+        <Message Importance="high" Text="Services: %(Bebop.Services)" />
+        <Message Importance="high" Text="Emit Notice: %(Bebop.EmitNotice)" />
+        <Message Importance="high" Text="Emit Binary Schema: %(Bebop.EmitBinarySchema)" />
+        <Message Importance="high" Text="Diagnostic Format: %(Bebop.LogFormat)" />
+        <Message Importance="high" Text="Namespace: %(Bebop.Namespace)" Condition="'%(Bebop.Namespace)' != '' "/>
+        <Message Importance="high" Text="Custom Options: %(Bebop.Options)" Condition="'%(Bebop.Options)' != '' "/>
+        <Message Importance="high" Text="No Emit: %(Bebop.NoEmit)" Condition="'%(Bebop.NoEmit)' == 'true'" />
+        <Message Importance="high" Text="No Warn: %(Bebop.NoWarn)" Condition="'%(Bebop.NoWarn)' != '' "/>
+        <Message Importance="high" Text="Input Schemas: $(_BebopSchemas)" Condition="'$(_BebopSchemas)' != '' "/>
+        <Message Importance="high" Text="Full Output Path: $(_BebopOutput)" />
+        <Message Importance="high" Text="Generator String: $(_GeneratorOptions)" />
+        <Message Importance="high" Text="Complete Command: &quot;$(_Bebopc)&quot; $(_CompilerFlags)" />
+        <Message Importance="high" Text="==============================" />
     </Target>
 
     <Target Name="ValidateBebopcCommandLine" DependsOnTargets="DefineBebopProperties">
@@ -53,20 +137,52 @@
         <Error
             Text="The defined path for the Bebop compiler could not be found: $(_Bebopc)"
             Condition="!Exists($(_Bebopc))" />
+
+        <Error
+            Text="Invalid Bebop Services option: %(Bebop.Services). Valid options are: none, client, server, both"
+            Condition="'%(Bebop.Services)' != '' and '%(Bebop.Services)' != 'none' and '%(Bebop.Services)' != 'client' and '%(Bebop.Services)' != 'server' and '%(Bebop.Services)' != 'both'" />
+        <Error
+            Text="Invalid Bebop EmitNotice value: %(Bebop.EmitNotice). Must be true or false"
+            Condition="'%(Bebop.EmitNotice)' != '' and '%(Bebop.EmitNotice)' != 'true' and '%(Bebop.EmitNotice)' != 'false'" />
+        <Error
+            Text="Invalid Bebop EmitBinarySchema value: %(Bebop.EmitBinarySchema). Must be true or false"
+            Condition="'%(Bebop.EmitBinarySchema)' != '' and '%(Bebop.EmitBinarySchema)' != 'true' and '%(Bebop.EmitBinarySchema)' != 'false'" />
+        <Error
+            Text="Invalid namespace format: %(Bebop.Namespace). Must match pattern: ^[a-zA-Z]+(\\.[a-zA-Z]+)*$"
+            Condition="'%(Bebop.Namespace)' != '' and !$([System.Text.RegularExpressions.Regex]::IsMatch('%(Bebop.Namespace)', '^[a-zA-Z]+(\.[a-zA-Z]+)*$'))" />
+        <Error
+            Text="Invalid Bebop NoEmit value: %(Bebop.NoEmit). Must be true or false"
+            Condition="'%(Bebop.NoEmit)' != '' and '%(Bebop.NoEmit)' != 'true' and '%(Bebop.NoEmit)' != 'false'" />
+        <Error
+            Text="Invalid diagnostic format: %(Bebop.LogFormat). Valid options are: Enhanced, JSON, MSBuild"
+            Condition="'%(Bebop.LogFormat)' != '' and '%(Bebop.LogFormat)' != 'Enhanced' and '%(Bebop.LogFormat)' != 'JSON' and '%(Bebop.LogFormat)' != 'MSBuild'" />
     </Target>
 
-    <Target Name="CompileBops" BeforeTargets="CoreCompile" DependsOnTargets="PrepareForBuild;ValidateBebopcCommandLine" Inputs="@(Bebop)" Outputs="$(_BebopOutput)">
+    <Target Name="CreateOutputDirectories" DependsOnTargets="DefineBebopProperties">
+        <MakeDir Directories="$(_BebopOutputDir)" Condition="'$(_BebopOutputDir)' != '' and !Exists('$(_BebopOutputDir)')" />
+    </Target>
+
+    <Target Name="CompileBops" BeforeTargets="CoreCompile" DependsOnTargets="PrepareForBuild;CreateOutputDirectories;BuildCompilerFlags;ValidateBebopcCommandLine" Inputs="@(Bebop)" Outputs="$(_BebopOutput)">
+        <Message Importance="normal" Text="Compiling Bebop schema: %(Bebop.Identity) -> $(_BebopOutput)" />
         <Exec
-            Command="&quot;$(_Bebopc)&quot; --include $(_BebopSchemas) -df %(Bebop.LogFormat) build --generator &quot;%(Bebop.Language):$(_BebopOutput),namespace=%(Bebop.Namespace),langVersion=%(Bebop.LangVersion)&quot;"
+            Command="&quot;$(_Bebopc)&quot; $(_CompilerFlags)"
             EchoOff='true'
             StandardErrorImportance='high'
             StandardOutputImportance='low'
             ConsoleToMSBuild='true'
             ContinueOnError='false'
-            StdOutEncoding='utf-8'>
+            StdOutEncoding='utf-8'
+            WorkingDirectory="$(MSBuildProjectDirectory)">
             <Output TaskParameter="ConsoleOutput" PropertyName="_BebopCompiler" />
             <Output TaskParameter="ExitCode" PropertyName="MSBuildLastExitCode" />
         </Exec>
+        <Message Importance="normal" Text="Successfully compiled Bebop schema: %(Bebop.Identity)" />
+    </Target>
+
+    <!-- Clean target to remove generated files -->
+    <Target Name="CleanBebopGenerated" BeforeTargets="CoreClean">
+        <Delete Files="$(_BebopOutput)" Condition="Exists('$(_BebopOutput)')" />
+        <Message Importance="normal" Text="Cleaned Bebop generated file: $(_BebopOutput)" />
     </Target>
 
     <!-- This ensures CompileBops is called during the build process -->
@@ -76,4 +192,5 @@
             $(CoreCompileDependsOn)
         </CoreCompileDependsOn>
     </PropertyGroup>
+
 </Project>

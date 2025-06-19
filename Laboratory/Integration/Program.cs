@@ -4,8 +4,19 @@ using System.Diagnostics;
 using System.IO;
 using Bebop.Runtime;
 
+if (args.Length == 1 && args[0] == "encode")
+{
+    var lib = MakeLibrary();
+    byte[] buffer = Library.Encode(lib);
 
-if (args.Length == 2 && args[0] == "encode")
+    // Write to stdout for piping
+    using var stdout = Console.OpenStandardOutput();
+    stdout.Write(buffer, 0, buffer.Length);
+    stdout.Flush();
+
+    return 0;
+}
+else if (args.Length == 2 && args[0] == "encode")
 {
     var lib = MakeLibrary();
     byte[] buffer = Library.Encode(lib);
@@ -13,6 +24,18 @@ if (args.Length == 2 && args[0] == "encode")
     Console.WriteLine($"Writing {buffer.Length} bytes to {path}");
     File.WriteAllBytes(path, buffer);
 
+    return 0;
+}
+else if (args.Length == 1 && args[0] == "decode")
+{
+    // Read from stdin
+    using var stdin = Console.OpenStandardInput();
+    using var memoryStream = new MemoryStream();
+    stdin.CopyTo(memoryStream);
+    byte[] buffer = memoryStream.ToArray();
+
+    var lib = Library.Decode(buffer);
+    ValidateLibrary(lib);
     return 0;
 }
 else if (args.Length == 2 && args[0] == "decode")
@@ -25,7 +48,11 @@ else if (args.Length == 2 && args[0] == "decode")
 else
 {
     var name = Environment.GetCommandLineArgs()[0];
-    Console.WriteLine($"Usage:\n  {name} encode\n  {name} decode file.buf");
+    Console.WriteLine($"Usage:");
+    Console.WriteLine($"  {name} encode              # encode to stdout");
+    Console.WriteLine($"  {name} encode file.enc     # encode to file");
+    Console.WriteLine($"  {name} decode              # decode from stdin");
+    Console.WriteLine($"  {name} decode file.enc     # decode from file");
     return 1;
 }
 

@@ -3,7 +3,7 @@
 set -e
 
 dotnet --version
-export WASI_VERSION=20
+export WASI_VERSION=25
 export WASI_VERSION_FULL=${WASI_VERSION}.0
 compiler_dir="$(readlink -f ../Compiler)"
 env_file="$(readlink -f ../.env)"

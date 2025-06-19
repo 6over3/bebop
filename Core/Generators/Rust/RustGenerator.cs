@@ -56,8 +56,9 @@ namespace Core.Generators.Rust
 
         public RustGenerator() : base() { }
 
-        public override ValueTask<string> Compile(BebopSchema schema, GeneratorConfig config, CancellationToken cancellationToken = default)
+        public override ValueTask<Artifact[]> Compile(BebopSchema schema, GeneratorConfig config, CancellationToken cancellationToken = default)
         {
+            var artifacts = new List<Artifact>();
             Schema = schema;
             Config = config;
             // the main scope which is where we write the const definitions and the borrowed types (as these are the
@@ -130,14 +131,9 @@ namespace Core.Generators.Rust
                     mainBuilder.Append(ownedBuilder.ToString());
                 });
 
-            return ValueTask.FromResult(mainBuilder.ToString());
-        }
+            artifacts.Add(new Artifact(config.OutFile, mainBuilder.Encode()));
 
-        public override AuxiliaryFile? GetAuxiliaryFile() => null;
-
-        public override void WriteAuxiliaryFile(string outputPath)
-        {
-            // Nothing to do because the runtime is a cargo package.
+            return new ValueTask<Artifact[]>(artifacts.ToArray());
         }
 
         public override string Alias { get => "rust"; set => throw new NotImplementedException(); }

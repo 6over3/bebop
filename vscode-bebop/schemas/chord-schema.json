@@ -258,7 +258,7 @@
               "description": "The alias of the generator.",
               "minLength": 1,
               "maxLength": 255,
-              "pattern": "^(?!cs$|py$|ts$|rust$|dart$|cpp$)[a-z]{1,255}$",
+              "pattern": "^(?!cs$|py$|ts$|rust$|dart$|cpp$|c$)[a-z]{1,255}$",
               "patternErrorMessage": "Alias cannot be the same as a built-in generator and must be lowercase (e.g. acme)."
             }
           },

@@ -219,6 +219,8 @@ const extLookupTable: Record<
   cpp: { ext: "cpp", auxiliaryExt: "hpp" },
   cs: { ext: "cs" },
   dart: { ext: "dart" },
+  c: { ext: "c" },
+  swift: { ext: "swift" },
   py: { ext: "py" },
   rust: { ext: "rs" },
   ts: { ext: "ts" },
@@ -593,6 +595,7 @@ export const BebopCompiler = (
         }
       }
       const response = await runBebopc(fileMap, buildCommand.build());
+      console.log(response)
       if (response.exitCode !== 0) {
         return parseStandardError(response.stdErr, response.exitCode);
       }

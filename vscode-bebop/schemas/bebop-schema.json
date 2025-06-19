@@ -62,7 +62,7 @@
           "description": "Specifies code generators to use for compilation.",
           "type": "object",
           "patternProperties": {
-            "^(cs|ts|cpp|dart|rust|py|[a-z]{1,7})$": {
+            "^(cs|ts|cpp|dart|rust|py|c[a-z]{1,7})$": {
               "type": "object",
               "properties": {
                 "outFile": {

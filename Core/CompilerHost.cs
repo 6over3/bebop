@@ -6,6 +6,7 @@ using Chord.Common;
 using Chord.Runtime;
 using Core.Exceptions;
 using Core.Generators;
+using Core.Generators.C;
 using Core.Generators.CPlusPlus;
 using Core.Generators.CSharp;
 using Core.Generators.Dart;
@@ -183,11 +184,13 @@ public class CompilerHost : IDisposable
         public CompilerHostBuilder WithDefaultGenerators()
         {
             return WithGenerator("cs", new CSharpGenerator())
-            .WithGenerator("dart", new DartGenerator())
-            .WithGenerator("rust", new RustGenerator())
-            .WithGenerator("py", new PythonGenerator())
-            .WithGenerator("ts", new TypeScriptGenerator())
-            .WithGenerator("cpp", new CPlusPlusGenerator());
+                .WithGenerator("dart", new DartGenerator())
+                .WithGenerator("rust", new RustGenerator())
+                .WithGenerator("py", new PythonGenerator())
+                .WithGenerator("ts", new TypeScriptGenerator())
+                .WithGenerator("cpp", new CPlusPlusGenerator())
+                .WithGenerator("c", new CGenerator());
+
         }
 
         public CompilerHostBuilder WithGenerator(string alias, BaseGenerator generator)

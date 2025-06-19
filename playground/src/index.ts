@@ -481,6 +481,9 @@ export const init = async () => {
             case "dart":
               await playground.updatePreview(result.content, "dart");
               break;
+              case "c":
+              await playground.updatePreview(result.content, "cpp");
+              break;
             case "cpp":
               await playground.updatePreview(result.content, "cpp");
               break;

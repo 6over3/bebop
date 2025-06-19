@@ -26,45 +26,39 @@ public class BebopCompiler(CompilerHost Host)
         return schema;
     }
 
-    public static void EmitGeneratedFiles(List<GeneratedFile> generatedFiles, BebopConfig config)
+    public static void EmitGeneratedFiles(CompilationResult results, BebopConfig config)
     {
-        foreach (var generatedFile in generatedFiles)
+        foreach (var artifact in results.Artifacts)
         {
-            var outFile = generatedFile.Name;
 
-            // Normalize the path
-            if (!Path.IsPathRooted(outFile))
+
+            if (!Directory.Exists(results.OutputDirectory))
             {
-                outFile = Path.GetFullPath(Path.Combine(config.WorkingDirectory, outFile));
+                Directory.CreateDirectory(results.OutputDirectory);
             }
+            var outPath =  Path.GetFullPath(Path.Combine(results.OutputDirectory, Path.GetFileName(artifact.Name)));
 
-            var outDirectory = Path.GetDirectoryName(outFile) ?? throw new CompilerException("Could not determine output directory.");
-            if (!Directory.Exists(outDirectory))
-            {
-                Directory.CreateDirectory(outDirectory);
-            }
-
-            File.WriteAllText(outFile, generatedFile.Content);
-
-            if (generatedFile.AuxiliaryFile is not null)
-            {
-                var auxiliaryOutFile = Path.GetFullPath(Path.Combine(outDirectory, generatedFile.AuxiliaryFile.Name));
-                File.WriteAllBytes(auxiliaryOutFile, generatedFile.AuxiliaryFile.Content);
-            }
+            File.WriteAllBytes(outPath, artifact.Content);
         }
     }
 
 
-    public async ValueTask<GeneratedFile> BuildAsync(GeneratorConfig generatorConfig, BebopSchema schema, BebopConfig config, CancellationToken cancellationToken)
+    public async ValueTask<CompilationResult> BuildAsync(GeneratorConfig generatorConfig, BebopSchema schema, BebopConfig config, CancellationToken cancellationToken)
     {
         if (!Host.TryGetGenerator(generatorConfig.Alias, out var generator))
         {
             throw new CompilerException($"Could not find generator with alias '{generatorConfig.Alias}'.");
         }
 
-        var compiled = await generator.Compile(schema, generatorConfig, cancellationToken);
-        var auxiliary = generator.GetAuxiliaryFile();
-        return new GeneratedFile(generatorConfig.OutFile, compiled, generator.Alias, auxiliary);
+        var artifacts = await generator.Compile(schema, generatorConfig, cancellationToken);
+        var baseOutputDirectory = Path.GetFullPath(config.WorkingDirectory);
+        var outFile = generatorConfig.OutFile;
+        if (!Path.IsPathRooted(outFile))
+        {
+            outFile = Path.GetFullPath(Path.Combine(baseOutputDirectory, outFile));
+        }
+        var outDirectory = Path.GetDirectoryName(outFile) ?? throw new CompilerException("Could not determine output directory.");
+        return new CompilationResult(artifacts, outDirectory);
     }
 
     public static (List<SpanException> Warnings, List<SpanException> Errors) GetSchemaDiagnostics(BebopSchema schema, int[] supressWarningCodes)

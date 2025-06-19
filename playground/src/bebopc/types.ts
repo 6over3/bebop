@@ -1,5 +1,5 @@
 export type TempoService = "none" | "client" | "server" | "both";
-export type GeneratorAlias = "cs" | "ts" | "rust" | "py" | "dart" | "cpp";
+export type GeneratorAlias = "cs" | "ts" | "rust" | "py" | "dart" | "cpp" | "c" | "swift";
 export type DiagnosticFormat = "json" | "enhanced" | "structured" | "msbuild";
 
 interface GeneratorConfigBody {

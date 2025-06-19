@@ -22,3 +22,7 @@ message Song {
 mut struct Library {
     map[guid, Song] songs;
 }
+
+struct AudioData {
+    float32[] samples;
+}

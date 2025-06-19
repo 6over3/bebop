@@ -334,8 +334,10 @@ namespace Core.Generators.Python
         /// Generate code for a Bebop schema.
         /// </summary>
         /// <returns>The generated code.</returns>
-        public override ValueTask<string> Compile(BebopSchema schema, GeneratorConfig config, CancellationToken cancellationToken = default)
+        public override ValueTask<Artifact[]> Compile(BebopSchema schema, GeneratorConfig config,
+            CancellationToken cancellationToken = default)
         {
+            var artifacts = new List<Artifact>();
             Schema = schema;
             Config = config;
             var builder = new IndentedStringBuilder();
@@ -356,20 +358,25 @@ namespace Core.Generators.Python
                         builder.Indent(indentStep);
                         if (!string.IsNullOrWhiteSpace(definition.Documentation))
                         {
-                            builder.Append(FormatDocumentation(definition.Documentation, null));
+                            builder.AppendLine(FormatDocumentation(definition.Documentation, null));
                             builder.AppendLine();
                         }
+
                         for (var i = 0; i < ed.Members.Count; i++)
                         {
                             var field = ed.Members.ElementAt(i);
                             builder.AppendLine($"{field.Name.ToUpper()} = {field.ConstantValue}");
                             if (!string.IsNullOrWhiteSpace(field.Documentation))
                             {
-                                var deprecatedReason = field.DeprecatedDecorator?.TryGetValue("reason", out var reason) ?? false ? reason : null;
-                                builder.Append(FormatDocumentation(field.Documentation, deprecatedReason));
+                                var deprecatedReason =
+                                    field.DeprecatedDecorator?.TryGetValue("reason", out var reason) ?? false
+                                        ? reason
+                                        : null;
+                                builder.AppendLine(FormatDocumentation(field.Documentation, deprecatedReason));
                                 builder.AppendLine("");
                             }
                         }
+
                         builder.AppendLine("");
                         builder.Dedent(indentStep);
                         break;
@@ -380,9 +387,10 @@ namespace Core.Generators.Python
                             builder.Indent(indentStep);
                             if (!string.IsNullOrWhiteSpace(definition.Documentation))
                             {
-                                builder.Append(FormatDocumentation(definition.Documentation, null));
+                                builder.AppendLine(FormatDocumentation(definition.Documentation, null));
                                 builder.AppendLine();
                             }
+
                             var isImmutableStruct = rd is StructDefinition sd && !sd.IsMutable;
                             var fieldPrepend = isImmutableStruct ? "_" : "";
                             for (var i = 0; i < fd.Fields.Count; i++)
@@ -392,15 +400,19 @@ namespace Core.Generators.Python
                                 builder.AppendLine($"{fieldPrepend}{field.Name}: {type}");
                                 if (!string.IsNullOrWhiteSpace(field.Documentation))
                                 {
-                                    builder.Append(FormatDocumentation(field.Documentation, field.DeprecatedDecorator?.Arguments?["reason"]));
+                                    builder.AppendLine(FormatDocumentation(field.Documentation,
+                                        field.DeprecatedDecorator?.Arguments?["reason"]));
                                 }
+
                                 builder.AppendLine();
                             }
+
                             if (rd.OpcodeDecorator != null)
                             {
                                 builder.AppendLine($"opcode = {rd.OpcodeDecorator.Arguments["fourcc"]}");
                                 builder.AppendLine("");
                             }
+
                             builder.AppendLine("");
                             if (!(fd is MessageDefinition))
                             {
@@ -409,6 +421,7 @@ namespace Core.Generators.Python
                                 {
                                     fields.Add($" {field.Name}: {TypeName(field.Type)}");
                                 }
+
                                 if (fields.Count != 0)
                                 {
                                     builder.Append("def __init__(self, ");
@@ -420,6 +433,7 @@ namespace Core.Generators.Python
                                     {
                                         builder.AppendLine($"self.{fieldPrepend}{field.Name} = {field.Name}");
                                     }
+
                                     builder.Dedent(indentStep);
                                 }
                                 else
@@ -427,6 +441,7 @@ namespace Core.Generators.Python
                                     builder.AppendLine("def __init__(self):");
                                     builder.AppendLine("   self.encode = self._encode");
                                 }
+
                                 builder.AppendLine();
                             }
                             else
@@ -453,50 +468,55 @@ namespace Core.Generators.Python
                         else if (rd is UnionDefinition ud)
                         {
                             builder.CodeBlock($"class {ud.ClassName()}:", indentStep, () =>
+                            {
+                                builder.AppendLine();
+                                if (!string.IsNullOrWhiteSpace(definition.Documentation))
                                 {
-                                    builder.AppendLine();
-                                    if (!string.IsNullOrWhiteSpace(definition.Documentation))
-                                    {
-                                        builder.Append(FormatDocumentation(definition.Documentation, null));
-                                    }
-                                    if (rd.OpcodeDecorator is not null && rd.OpcodeDecorator.TryGetValue("fourcc", out var fourcc))
-                                    {
-                                        builder.AppendLine($"opcode = {fourcc}");
-                                        builder.AppendLine("");
-                                    }
+                                    builder.AppendLine(FormatDocumentation(definition.Documentation, null));
+                                }
 
-                                    builder.AppendLine($"data: UnionType");
-                                    builder.AppendLine();
-                                    builder.CodeBlock($"def __init__(self, data: UnionType):", indentStep, () =>
-                                    {
-                                        builder.AppendLine("self.encode = self._encode");
-                                        builder.AppendLine($"self.data = data");
-                                    }, open: string.Empty, close: string.Empty);
-                                    builder.AppendLine("@property");
-                                    builder.CodeBlock($"def discriminator(self):", indentStep, () =>
-                                    {
-                                        builder.AppendLine($"return self.data.discriminator");
-                                    }, open: string.Empty, close: string.Empty);
-                                    builder.AppendLine("@property");
-                                    builder.CodeBlock($"def value(self):", indentStep, () =>
-                                    {
-                                        builder.AppendLine($"return self.data.value");
-                                    }, open: string.Empty, close: string.Empty);
-                                    foreach (var b in ud.Branches)
-                                    {
-                                        builder.AppendLine("@staticmethod");
-                                        builder.CodeBlock($"def from{b.ClassName()}(value: {b.ClassName()}):", indentStep, () =>
+                                if (rd.OpcodeDecorator is not null &&
+                                    rd.OpcodeDecorator.TryGetValue("fourcc", out var fourcc))
+                                {
+                                    builder.AppendLine($"opcode = {fourcc}");
+                                    builder.AppendLine("");
+                                }
+
+                                builder.AppendLine($"data: UnionType");
+                                builder.AppendLine();
+                                builder.CodeBlock($"def __init__(self, data: UnionType):", indentStep, () =>
+                                {
+                                    builder.AppendLine("self.encode = self._encode");
+                                    builder.AppendLine($"self.data = data");
+                                }, open: string.Empty, close: string.Empty);
+                                builder.AppendLine("@property");
+                                builder.CodeBlock($"def discriminator(self):", indentStep, () =>
+                                {
+                                    builder.AppendLine($"return self.data.discriminator");
+                                }, open: string.Empty, close: string.Empty);
+                                builder.AppendLine("@property");
+                                builder.CodeBlock($"def value(self):", indentStep, () =>
+                                {
+                                    builder.AppendLine($"return self.data.value");
+                                }, open: string.Empty, close: string.Empty);
+                                foreach (var b in ud.Branches)
+                                {
+                                    builder.AppendLine("@staticmethod");
+                                    builder.CodeBlock($"def from{b.ClassName()}(value: {b.ClassName()}):", indentStep,
+                                        () =>
                                         {
-                                            builder.AppendLine($"return {definition.ClassName()}(UnionDefinition({b.Discriminator}, value))");
+                                            builder.AppendLine(
+                                                $"return {definition.ClassName()}(UnionDefinition({b.Discriminator}, value))");
                                         }, open: string.Empty, close: string.Empty);
-                                        builder.CodeBlock($"def is{b.ClassName()}(self):", indentStep, () =>
-                                        {
-                                            builder.AppendLine($"return isinstance(self.value, {b.ClassName()})");
-                                        }, open: string.Empty, close: string.Empty);
-                                    }
-                                }, close: string.Empty, open: string.Empty);
+                                    builder.CodeBlock($"def is{b.ClassName()}(self):", indentStep, () =>
+                                    {
+                                        builder.AppendLine($"return isinstance(self.value, {b.ClassName()})");
+                                    }, open: string.Empty, close: string.Empty);
+                                }
+                            }, close: string.Empty, open: string.Empty);
                             builder.Indent(indentStep);
                         }
+
                         builder.AppendLine($"def _encode(self):");
                         builder.Indent(indentStep);
                         builder.AppendLine("\"\"\"Fake class method for allowing instance encode\"\"\"");
@@ -538,7 +558,8 @@ namespace Core.Generators.Python
                         // representation
                         builder.CodeBlock($"def __repr__(self):", indentStep, () =>
                         {
-                            builder.AppendLine($"return json.dumps(self, default=lambda o: o.value if isinstance(o, Enum) else dict(sorted(o.__dict__.items())) if hasattr(o, \"__dict__\") else str(o))");
+                            builder.AppendLine(
+                                $"return json.dumps(self, default=lambda o: o.value if isinstance(o, Enum) else dict(sorted(o.__dict__.items())) if hasattr(o, \"__dict__\") else str(o))");
                         }, open: string.Empty, close: string.Empty);
                         builder.AppendLine("");
                         builder.AppendLine("");
@@ -556,15 +577,10 @@ namespace Core.Generators.Python
                 }
             }
 
-            return ValueTask.FromResult(builder.ToString());
-        }
+            artifacts.Add(new(config.OutFile, builder.Encode()));
 
-        public override void WriteAuxiliaryFile(string outputPath)
-        {
-            // There is nothing to do here.
+            return ValueTask.FromResult(artifacts.ToArray());
         }
-
-        public override AuxiliaryFile? GetAuxiliaryFile() => null;
 
         public override string Alias { get => "py"; set => throw new NotImplementedException(); }
         public override string Name { get => "Python"; set => throw new NotImplementedException(); }
