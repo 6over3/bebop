@@ -16,9 +16,12 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /experimental:c11atomics")
 add_executable(sandbox
-    sandbox.c
-    ${RUNTIME_SOURCE_DIR}/bebop.h
-    ${RUNTIME_SOURCE_DIR}/bebop.c
+    "${GEN_SOURCE_DIR}/bebop.h"
+    "${GEN_SOURCE_DIR}/bebop.c"
+    "${GEN_SOURCE_DIR}/jazz.h"
+    "${GEN_SOURCE_DIR}/jazz.c"
+    #sandbox.c
+    "${GEN_SOURCE_DIR}/../test/jazz_bench.c"
 )
 target_include_directories(sandbox PRIVATE ${RUNTIME_SOURCE_DIR})
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT sandbox)
