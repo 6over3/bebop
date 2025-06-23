@@ -10,14 +10,12 @@ static bebop_arena_block_t *arena_allocate_block(const bebop_arena_t *arena,
   size_t capacity = arena->options.initial_block_size;
   size_t required = align_size(min_size, BEBOP_ARENA_DEFAULT_ALIGNMENT);
 
-  if (capacity < required) {
+  if (required > arena->options.max_block_size) 
+    return NULL;
+  if (capacity < required) 
     capacity = required;
-  }
-
-  if (capacity > arena->options.max_block_size &&
-      required <= arena->options.max_block_size) {
+  if (capacity > arena->options.max_block_size) 
     capacity = arena->options.max_block_size;
-  }
 
   size_t total_size = sizeof(bebop_arena_block_t) + capacity;
 
