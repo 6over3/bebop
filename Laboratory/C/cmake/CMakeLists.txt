@@ -14,7 +14,10 @@ add_custom_target(bebopc_jazz DEPENDS "${GEN_SOURCE_DIR}/bebop.h" "${GEN_SOURCE_
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
+
+# NOTE: We could have checked for __STDC_NO_ATOMICS__, and then also this might be not required if we were to build with BEBOP_SINGLE_THREADED
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /experimental:c11atomics")
+
 add_executable(sandbox
     "${GEN_SOURCE_DIR}/bebop.h"
     "${GEN_SOURCE_DIR}/bebop.c"
