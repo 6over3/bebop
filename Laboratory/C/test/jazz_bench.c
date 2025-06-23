@@ -7,6 +7,10 @@
 #include <string.h>
 #include <assert.h>
 
+#if defined(WIN32)
+#include <windows.h>
+#endif
+
 typedef struct
 {
     double encode_time_ms;
@@ -20,7 +24,20 @@ typedef struct
 static double get_time_ms(void)
 {
     struct timespec ts;
+#if defined(WIN32)
+    static LARGE_INTEGER frequency;
+    static bool frequency_has_value = false;
+    if (!frequency_has_value) {
+        QueryPerformanceFrequency(&frequency);
+        frequency_has_value = true;
+    }
+    LARGE_INTEGER count;
+    QueryPerformanceCounter(&count);
+    ts.tv_sec = count.QuadPart / frequency.QuadPart;
+    ts.tv_nsec = (long)((count.QuadPart % frequency.QuadPart) * 1e9 / frequency.QuadPart);
+#else
     clock_gettime(CLOCK_MONOTONIC, &ts);
+#endif
     return ts.tv_sec * 1000.0 + ts.tv_nsec / 1000000.0;
 }
 
