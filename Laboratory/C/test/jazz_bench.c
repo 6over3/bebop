@@ -7,6 +7,10 @@
 #include <string.h>
 #include <assert.h>
 
+#if defined(WIN32)
+#include <windows.h>
+#endif
+
 typedef struct
 {
     double encode_time_ms;
@@ -20,7 +24,20 @@ typedef struct
 static double get_time_ms(void)
 {
     struct timespec ts;
+#if defined(WIN32)
+    static LARGE_INTEGER frequency;
+    static bool frequency_has_value = false;
+    if (!frequency_has_value) {
+        QueryPerformanceFrequency(&frequency);
+        frequency_has_value = true;
+    }
+    LARGE_INTEGER count;
+    QueryPerformanceCounter(&count);
+    ts.tv_sec = count.QuadPart / frequency.QuadPart;
+    ts.tv_nsec = (long)((count.QuadPart % frequency.QuadPart) * 1e9 / frequency.QuadPart);
+#else
     clock_gettime(CLOCK_MONOTONIC, &ts);
+#endif
     return ts.tv_sec * 1000.0 + ts.tv_nsec / 1000000.0;
 }
 
@@ -291,8 +308,12 @@ static benchmark_result_t benchmark_decoding(bebop_context_t *context, size_t it
         return result;
     }
 
+    uint8_t* local_template_encoded = malloc(template_size);
+    assert(local_template_encoded);
+    memcpy(local_template_encoded, template_encoded, template_size);
+
     result.encoded_size_bytes = template_size;
-    bebop_context_reset(context);
+    bebop_context_reset(context); // invalidates template_encoded data
 
     double start_time = get_time_ms();
     size_t total_bytes = 0;
@@ -300,7 +321,7 @@ static benchmark_result_t benchmark_decoding(bebop_context_t *context, size_t it
     for (size_t i = 0; i < iterations; i++)
     {
         library_t decoded_lib;
-        if (decode_library(template_encoded, template_size, &decoded_lib, context))
+        if (decode_library(local_template_encoded, template_size, &decoded_lib, context))
         {
             total_bytes += template_size;
             is_valid(&decoded_lib);
@@ -309,6 +330,8 @@ static benchmark_result_t benchmark_decoding(bebop_context_t *context, size_t it
     }
 
     double end_time = get_time_ms();
+
+    free(local_template_encoded);
 
     result.decode_time_ms = end_time - start_time;
     result.throughput_mb_per_sec = (total_bytes / 1024.0 / 1024.0) / (result.decode_time_ms / 1000.0);

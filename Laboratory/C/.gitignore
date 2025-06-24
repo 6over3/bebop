@@ -1,0 +1,5 @@
+.vs
+gen
+cmake/build
+*.bak
+*.lnk

@@ -464,7 +464,7 @@ namespace Core.Generators.CPlusPlus
                         builder.AppendLine($"    return result;");
                         builder.AppendLine("  }");
                         builder.AppendLine("");
-                        builder.AppendLine($"  static {td.Name} decode(std::vector<uint8_t> sourceBuffer) {{");
+                        builder.AppendLine($"  static {td.Name} decode(const std::vector<uint8_t>& sourceBuffer) {{");
                         builder.AppendLine($"    return {td.Name}::decode(sourceBuffer.data(), sourceBuffer.size());");
                         builder.AppendLine("  }");
                         builder.AppendLine("");
@@ -479,7 +479,7 @@ namespace Core.Generators.CPlusPlus
                         builder.AppendLine($"    return {td.Name}::decodeInto(reader, target);");
                         builder.AppendLine("  }");
                         builder.AppendLine("");
-                        builder.AppendLine($"  static size_t decodeInto(std::vector<uint8_t> sourceBuffer, {td.Name}& target) {{");
+                        builder.AppendLine($"  static size_t decodeInto(const std::vector<uint8_t>& sourceBuffer, {td.Name}& target) {{");
                         builder.AppendLine($"    return {td.Name}::decodeInto(sourceBuffer.data(), sourceBuffer.size(), target);");
                         builder.AppendLine("  }");
                         builder.AppendLine("");
