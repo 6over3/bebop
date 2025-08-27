@@ -1,6 +1,6 @@
 param (
     [Parameter(HelpMessage = 'The version of bebopc to install')]
-    [string]$bebopcVersion = '3.2.0',
+    [string]$bebopcVersion = '3.2.1',
     [Parameter(HelpMessage = 'The URL where bebpc artifacts will be fetched from')]
     [string]$manifestUrl = "https://api.github.com/repos/6over3/bebop/releases/tags/v${bebopcVersion}"
 )
