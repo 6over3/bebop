@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from struct import pack, unpack
-from typing import Any, TypeVar
+from typing import Any, TypeVar, Union
 from uuid import UUID
 
 # constants
@@ -24,7 +24,7 @@ class BebopReader:
     """
     A wrapper around a bytearray for reading Bebop base types from it.
 
-    It is used by the code that `bebopc --lang python` generates. 
+    It is used by the code that `bebopc --lang python` generates.
     You shouldn't need to use it directly.
     """
 
@@ -125,7 +125,7 @@ class BebopWriter:
     """
     A wrapper around a bytearray for writing Bebop base types from it.
 
-    It is used by the code that `bebopc --lang python` generates. 
+    It is used by the code that `bebopc --lang python` generates.
     You shouldn't need to use it directly.
     """
 
@@ -135,7 +135,7 @@ class BebopWriter:
 
     def _guarantee_buffer_length(self):
         """
-        This is only needed when message length is unknown; only occurs when _grow_by is used 
+        This is only needed when message length is unknown; only occurs when _grow_by is used
         """
         if self.length > len(self._buffer):
             data = bytearray([0] * self.length)
@@ -185,14 +185,14 @@ class BebopWriter:
     def write_bool(self, val: bool):
         self.write_byte(val)
 
-    def write_bytes(self, val: bytearray, write_msg_length: bool = True):
+    def write_bytes(self, val: Union[bytes, bytearray, memoryview], write_msg_length: bool = True):
         byte_count = len(val)
         if write_msg_length:
             self.write_uint32(byte_count)
         if byte_count == 0:
             return
         self.length += len(val)
-        self._buffer.extend(val)
+        self._buffer += val
 
     def write_string(self, val: str):
         if len(val) == 0:
