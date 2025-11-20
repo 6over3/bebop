@@ -1,8 +1,7 @@
+from datetime import datetime, timezone
 from struct import pack, unpack
-from uuid import UUID
-from datetime import datetime
-from enum import Enum
 from typing import Any, TypeVar
+from uuid import UUID
 
 # constants
 ticksBetweenEpochs = 621355968000000000
@@ -117,7 +116,7 @@ class BebopReader:
     def read_date(self) -> datetime:
         ticks = self.read_uint64() & dateMask
         ms = (ticks - ticksBetweenEpochs) / 10000000
-        return datetime.fromtimestamp(ms)
+        return datetime.fromtimestamp(ms, tz=timezone.utc)
 
     read_message_length = read_uint32
 
@@ -207,8 +206,8 @@ class BebopWriter:
         self.write_bytes(bebop_uid, write_msg_length=False)
 
     def write_date(self, date: datetime):
-        ms = int(date.timestamp())
-        ticks = ms * 10000000 + ticksBetweenEpochs 
+        secs = date.timestamp()
+        ticks = int(secs * 10000000) + ticksBetweenEpochs
         self.write_uint64(ticks & dateMask)
 
     def reserve_message_length(self):
