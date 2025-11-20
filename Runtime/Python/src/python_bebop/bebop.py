@@ -146,7 +146,7 @@ class BebopWriter:
         self.length += amount
         self._guarantee_buffer_length()
 
-    def write_byte(self, val: bytes):
+    def write_byte(self, val: int):
         self.length += 1
         self._buffer.append(val)
 
