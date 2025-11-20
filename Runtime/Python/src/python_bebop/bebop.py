@@ -201,9 +201,7 @@ class BebopWriter:
         self.write_bytes(val.encode("utf-8"))
 
     def write_guid(self, guid: UUID):
-        b = guid.bytes
-        bebop_uid = [b[3], b[2], b[1], b[0], b[5], b[4], b[7], b[6], b[8], b[9], b[10], b[11], b[12], b[13], b[14], b[15]]
-        self.write_bytes(bebop_uid, write_msg_length=False)
+        self.write_bytes(guid.bytes_le, write_msg_length=False)
 
     def write_date(self, date: datetime):
         secs = date.timestamp()
