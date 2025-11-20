@@ -221,7 +221,7 @@ class BebopWriter:
         return i
 
     def fill_message_length(self, position: int, message_length: int):
-        self._buffer[position:position+2] = message_length.to_bytes(2, "little")
+        self._buffer[position:position+4] = message_length.to_bytes(4, "little")
 
     def to_list(self):
         return list(self._buffer)
