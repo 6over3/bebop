@@ -11,6 +11,7 @@ class UnionDefinition:
     """
     A utility class for unions
     """
+    __slots__ = ('discriminator', 'value')
     discriminator: int
     value: Any
 
@@ -27,6 +28,7 @@ class BebopReader:
     It is used by the code that `bebopc --lang python` generates.
     You shouldn't need to use it directly.
     """
+    __slots__ = ('_buffer', 'index')
 
     def __init__(self, buffer: bytearray | None = None):
         self._buffer = buffer if buffer is not None else bytearray()
@@ -119,6 +121,7 @@ class BebopWriter:
     It is used by the code that `bebopc --lang python` generates.
     You shouldn't need to use it directly.
     """
+    __slots__ = ('_buffer',)
 
     def __init__(self):
         self._buffer = bytearray()
