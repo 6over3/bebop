@@ -28,7 +28,7 @@ class UnionDefinition:
     discriminator: int
     value: Any
 
-    def __init__(self, discriminator: int, value: Any) -> None:
+    def __init__(self, discriminator: int, value: Any):
         self.discriminator = discriminator
         self.value = value
 
