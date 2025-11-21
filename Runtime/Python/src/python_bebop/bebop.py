@@ -107,11 +107,9 @@ class BebopReader:
         return bytearray(string_data).decode('utf-8')
 
     def read_guid(self) -> UUID:
-        b = self._buffer[self.index : self.index + 16]
-        reordered = [b[3], b[2], b[1], b[0], b[5], b[4], b[7], b[6], b[8], b[9], b[10], b[11], b[12], b[13], b[14], b[15]]
-        g = UUID(bytes=bytes(reordered))
+        v = self._buffer[self.index : self.index + 16]
         self.index += 16
-        return g
+        return UUID(bytes_le=bytes(v))
 
     def read_date(self) -> datetime:
         ticks = self.read_uint64() & dateMask
