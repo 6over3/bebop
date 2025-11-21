@@ -30,12 +30,12 @@ class BebopReader:
     """
     __slots__ = ('_buffer', 'index')
 
-    def __init__(self, buffer: bytearray | None = None):
-        self._buffer = buffer if buffer is not None else bytearray()
+    def __init__(self, buffer: Union[bytes, bytearray, memoryview, list] = b""):
+        self._buffer = memoryview(bytes(buffer) if isinstance(buffer, list) else buffer)
         self.index = 0
 
     @classmethod
-    def from_buffer(cls, buffer: bytearray):
+    def from_buffer(cls, buffer: Union[bytes, bytearray, memoryview, list]):
         return cls(buffer)
 
     def _skip(self, amount: int):
@@ -79,12 +79,12 @@ class BebopReader:
     def read_float32(self):
         v = self._buffer[self.index : self.index + 4]
         self.index += 4
-        return unpack("<f", bytearray(v))[0]
+        return unpack("<f", v)[0]
 
     def read_float64(self):
         v = self._buffer[self.index : self.index + 8]
         self.index += 8
-        return unpack("<d", bytearray(v))[0]
+        return unpack("<d", v)[0]
 
     def read_bool(self):
         return self.read_byte() != 0
@@ -93,13 +93,13 @@ class BebopReader:
         length = self.read_uint32()
         v = self._buffer[self.index : self.index + length]
         self.index += length
-        return v
+        return bytes(v)
 
     def read_string(self):
         length = self.read_uint32()
         string_data = self._buffer[self.index : self.index + length]
         self.index += length
-        return bytearray(string_data).decode('utf-8')
+        return str(string_data, 'utf-8')
 
     def read_guid(self) -> UUID:
         v = self._buffer[self.index : self.index + 16]
