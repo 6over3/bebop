@@ -8,6 +8,7 @@ from uuid import UUID
 # constants
 _TICKS_BETWEEN_EPOCHS = 621355968000000000
 _DATE_MASK = 0x3fffffffffffffff
+_UTC = timezone.utc
 
 # pre-compiled struct formats
 _UINT16 = Struct("<H")
@@ -123,7 +124,7 @@ class BebopReader:
     def read_date(self) -> datetime:
         ticks = self.read_uint64() & _DATE_MASK
         ms = (ticks - _TICKS_BETWEEN_EPOCHS) / 10000000
-        return datetime.fromtimestamp(ms, tz=timezone.utc)
+        return datetime.fromtimestamp(ms, tz=_UTC)
 
     read_message_length = read_uint32
 
@@ -175,7 +176,7 @@ class BebopWriter:
         self._buffer.append(val)
 
     def write_bytes(self, val: Union[bytes, bytearray, memoryview]) -> None:
-            self._buffer += _UINT32.pack(len(val))
+        self._buffer += _UINT32.pack(len(val))
         self._buffer += val
 
     def write_string(self, val: str) -> None:
