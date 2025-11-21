@@ -32,6 +32,9 @@ class UnionDefinition:
         self.discriminator = discriminator
         self.value = value
 
+    def __repr__(self) -> str:
+        return f"UnionDefinition(discriminator={self.discriminator!r}, value={self.value!r})"
+
 UnionType = TypeVar("UnionType", bound=UnionDefinition)
 
 class BebopReader:
