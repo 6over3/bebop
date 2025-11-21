@@ -99,7 +99,9 @@ class BebopReader:
         return v
 
     def read_bool(self) -> bool:
-        return self.read_byte() != 0
+        val = self._buffer[self.index]
+        self.index += 1
+        return val != 0
 
     def read_bytes(self) -> bytes:
         length = self.read_uint32()
@@ -170,11 +172,11 @@ class BebopWriter:
         self._buffer += _FLOAT64.pack(val)
 
     def write_bool(self, val: bool) -> None:
-        self.write_byte(val)
+        self._buffer.append(val)
 
     def write_bytes(self, val: Union[bytes, bytearray, memoryview], write_msg_length: bool = True) -> None:
         if write_msg_length:
-            self.write_uint32(len(val))
+            self._buffer += _UINT32.pack(len(val))
         self._buffer += val
 
     def write_string(self, val: str) -> None:
