@@ -131,55 +131,36 @@ class BebopWriter:
 
     def __init__(self):
         self._buffer = bytearray()
-        self.length = 0
 
-    def _guarantee_buffer_length(self):
-        """
-        This is only needed when message length is unknown; only occurs when _grow_by is used
-        """
-        if self.length > len(self._buffer):
-            data = bytearray([0] * self.length)
-            data[:len(self._buffer)] = self._buffer
-            self._buffer = data
-
-    def _grow_by(self, amount: int):
-        self.length += amount
-        self._guarantee_buffer_length()
+    @property
+    def length(self):
+        return len(self._buffer)
 
     def write_byte(self, val: int):
-        self.length += 1
         self._buffer.append(val)
 
     def write_uint16(self, val: int):
-        self.length += 2
         self._buffer += pack("<H", val)
 
     def write_int16(self, val: int):
-        self.length += 2
         self._buffer += pack("<h", val)
 
     def write_uint32(self, val: int):
-        self.length += 4
         self._buffer += pack("<I", val)
 
     def write_int32(self, val: int):
-        self.length += 4
         self._buffer += pack("<i", val)
 
     def write_uint64(self, val: int):
-        self.length += 8
         self._buffer += pack("<Q", val)
 
     def write_int64(self, val: int):
-        self.length += 8
         self._buffer += pack("<q", val)
 
     def write_float32(self, val: float):
-        self.length += 4
         self._buffer += pack("<f", val)
 
     def write_float64(self, val: float):
-        self.length += 8
         self._buffer += pack("<d", val)
 
     def write_bool(self, val: bool):
@@ -191,7 +172,6 @@ class BebopWriter:
             self.write_uint32(byte_count)
         if byte_count == 0:
             return
-        self.length += len(val)
         self._buffer += val
 
     def write_string(self, val: str):
@@ -213,8 +193,8 @@ class BebopWriter:
         Reserve some space to write a message's length prefix, and return its index.
         The length is stored as a little-endian fixed-width unsigned 32-bit integer, so 4 bytes are reserved.
         """
-        i = self.length
-        self._grow_by(4)
+        i = len(self._buffer)
+        self._buffer += b'\x00\x00\x00\x00'
         return i
 
     def fill_message_length(self, position: int, message_length: int):
