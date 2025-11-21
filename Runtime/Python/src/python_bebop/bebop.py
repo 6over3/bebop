@@ -28,10 +28,7 @@ class BebopReader:
     You shouldn't need to use it directly.
     """
 
-    _emptyByteList = bytearray()
-    _emptyString = ""
-
-    def __init__(self, buffer=None):
+    def __init__(self, buffer: bytearray | None = None):
         self._buffer = buffer if buffer is not None else bytearray()
         self.index = 0
 
@@ -92,16 +89,12 @@ class BebopReader:
 
     def read_bytes(self):
         length = self.read_uint32()
-        if length == 0:
-            return self._emptyByteList
         v = self._buffer[self.index : self.index + length]
         self.index += length
         return v
 
     def read_string(self):
         length = self.read_uint32()
-        if length == 0:
-            return self._emptyString
         string_data = self._buffer[self.index : self.index + length]
         self.index += length
         return bytearray(string_data).decode('utf-8')
@@ -165,17 +158,11 @@ class BebopWriter:
         self.write_byte(val)
 
     def write_bytes(self, val: Union[bytes, bytearray, memoryview], write_msg_length: bool = True):
-        byte_count = len(val)
         if write_msg_length:
-            self.write_uint32(byte_count)
-        if byte_count == 0:
-            return
+            self.write_uint32(len(val))
         self._buffer += val
 
     def write_string(self, val: str):
-        if len(val) == 0:
-            self.write_uint32(0)
-            return
         self.write_bytes(val.encode("utf-8"))
 
     def write_guid(self, guid: UUID):
