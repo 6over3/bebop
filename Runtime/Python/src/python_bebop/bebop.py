@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime, timezone
 from struct import Struct
 from typing import Any, TypeVar, Union
@@ -25,7 +27,7 @@ class UnionDefinition:
     discriminator: int
     value: Any
 
-    def __init__(self, discriminator: int, value: Any):
+    def __init__(self, discriminator: int, value: Any) -> None:
         self.discriminator = discriminator
         self.value = value
 
@@ -48,64 +50,64 @@ class BebopReader:
     def from_buffer(cls, buffer: Union[bytes, bytearray, memoryview, list]):
         return cls(buffer)
 
-    def _skip(self, amount: int):
+    def _skip(self, amount: int) -> None:
         self.index += amount
 
-    def read_byte(self):
+    def read_byte(self) -> int:
         byte = self._buffer[self.index]
         self.index += 1
         return byte
 
-    def read_uint16(self):
+    def read_uint16(self) -> int:
         (v,) = _UINT16.unpack_from(self._buffer, self.index)
         self.index += 2
         return v
 
-    def read_int16(self):
+    def read_int16(self) -> int:
         (v,) = _INT16.unpack_from(self._buffer, self.index)
         self.index += 2
         return v
 
-    def read_uint32(self):
+    def read_uint32(self) -> int:
         (v,) = _UINT32.unpack_from(self._buffer, self.index)
         self.index += 4
         return v
 
-    def read_int32(self):
+    def read_int32(self) -> int:
         (v,) = _INT32.unpack_from(self._buffer, self.index)
         self.index += 4
         return v
 
-    def read_uint64(self):
+    def read_uint64(self) -> int:
         (v,) = _UINT64.unpack_from(self._buffer, self.index)
         self.index += 8
         return v
 
-    def read_int64(self):
+    def read_int64(self) -> int:
         (v,) = _INT64.unpack_from(self._buffer, self.index)
         self.index += 8
         return v
 
-    def read_float32(self):
+    def read_float32(self) -> float:
         (v,) = _FLOAT32.unpack_from(self._buffer, self.index)
         self.index += 4
         return v
 
-    def read_float64(self):
+    def read_float64(self) -> float:
         (v,) = _FLOAT64.unpack_from(self._buffer, self.index)
         self.index += 8
         return v
 
-    def read_bool(self):
+    def read_bool(self) -> bool:
         return self.read_byte() != 0
 
-    def read_bytes(self):
+    def read_bytes(self) -> bytes:
         length = self.read_uint32()
         v = self._buffer[self.index : self.index + length]
         self.index += length
         return bytes(v)
 
-    def read_string(self):
+    def read_string(self) -> str:
         length = self.read_uint32()
         string_data = self._buffer[self.index : self.index + length]
         self.index += length
@@ -137,56 +139,56 @@ class BebopWriter:
         self._buffer = bytearray()
 
     @property
-    def length(self):
+    def length(self) -> int:
         return len(self._buffer)
 
-    def write_byte(self, val: int):
+    def write_byte(self, val: int) -> None:
         self._buffer.append(val)
 
-    def write_uint16(self, val: int):
+    def write_uint16(self, val: int) -> None:
         self._buffer += _UINT16.pack(val)
 
-    def write_int16(self, val: int):
+    def write_int16(self, val: int) -> None:
         self._buffer += _INT16.pack(val)
 
-    def write_uint32(self, val: int):
+    def write_uint32(self, val: int) -> None:
         self._buffer += _UINT32.pack(val)
 
-    def write_int32(self, val: int):
+    def write_int32(self, val: int) -> None:
         self._buffer += _INT32.pack(val)
 
-    def write_uint64(self, val: int):
+    def write_uint64(self, val: int) -> None:
         self._buffer += _UINT64.pack(val)
 
-    def write_int64(self, val: int):
+    def write_int64(self, val: int) -> None:
         self._buffer += _INT64.pack(val)
 
-    def write_float32(self, val: float):
+    def write_float32(self, val: float) -> None:
         self._buffer += _FLOAT32.pack(val)
 
-    def write_float64(self, val: float):
+    def write_float64(self, val: float) -> None:
         self._buffer += _FLOAT64.pack(val)
 
-    def write_bool(self, val: bool):
+    def write_bool(self, val: bool) -> None:
         self.write_byte(val)
 
-    def write_bytes(self, val: Union[bytes, bytearray, memoryview], write_msg_length: bool = True):
+    def write_bytes(self, val: Union[bytes, bytearray, memoryview], write_msg_length: bool = True) -> None:
         if write_msg_length:
             self.write_uint32(len(val))
         self._buffer += val
 
-    def write_string(self, val: str):
+    def write_string(self, val: str) -> None:
         self.write_bytes(val.encode("utf-8"))
 
-    def write_guid(self, guid: UUID):
+    def write_guid(self, guid: UUID) -> None:
         self.write_bytes(guid.bytes_le, write_msg_length=False)
 
-    def write_date(self, date: datetime):
+    def write_date(self, date: datetime) -> None:
         secs = date.timestamp()
         ticks = int(secs * 10000000) + ticksBetweenEpochs
         self.write_uint64(ticks & dateMask)
 
-    def reserve_message_length(self):
+    def reserve_message_length(self) -> int:
         """
         Reserve some space to write a message's length prefix, and return its index.
         The length is stored as a little-endian fixed-width unsigned 32-bit integer, so 4 bytes are reserved.
@@ -195,8 +197,8 @@ class BebopWriter:
         self._buffer += b'\x00\x00\x00\x00'
         return i
 
-    def fill_message_length(self, position: int, message_length: int):
+    def fill_message_length(self, position: int, message_length: int) -> None:
         _UINT32.pack_into(self._buffer, position, message_length)
 
-    def to_list(self):
+    def to_list(self) -> list[int]:
         return list(self._buffer)
