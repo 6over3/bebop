@@ -1,11 +1,21 @@
 from datetime import datetime, timezone
-from struct import pack, unpack
+from struct import Struct
 from typing import Any, TypeVar, Union
 from uuid import UUID
 
 # constants
 ticksBetweenEpochs = 621355968000000000
 dateMask = 0x3fffffffffffffff
+
+# pre-compiled struct formats
+_UINT16 = Struct("<H")
+_INT16 = Struct("<h")
+_UINT32 = Struct("<I")
+_INT32 = Struct("<i")
+_UINT64 = Struct("<Q")
+_INT64 = Struct("<q")
+_FLOAT32 = Struct("<f")
+_FLOAT64 = Struct("<d")
 
 class UnionDefinition:
     """
@@ -47,44 +57,44 @@ class BebopReader:
         return byte
 
     def read_uint16(self):
-        v = self._buffer[self.index : self.index + 2]
+        (v,) = _UINT16.unpack_from(self._buffer, self.index)
         self.index += 2
-        return int.from_bytes(v, byteorder="little")
+        return v
 
     def read_int16(self):
-        v = self._buffer[self.index : self.index + 2]
+        (v,) = _INT16.unpack_from(self._buffer, self.index)
         self.index += 2
-        return int.from_bytes(v, byteorder="little", signed=True)
+        return v
 
     def read_uint32(self):
-        v = self._buffer[self.index : self.index + 4]
+        (v,) = _UINT32.unpack_from(self._buffer, self.index)
         self.index += 4
-        return int.from_bytes(v, byteorder="little")
+        return v
 
     def read_int32(self):
-        v = self._buffer[self.index : self.index + 4]
+        (v,) = _INT32.unpack_from(self._buffer, self.index)
         self.index += 4
-        return int.from_bytes(v, byteorder="little", signed=True)
+        return v
 
     def read_uint64(self):
-        v = self._buffer[self.index : self.index + 8]
+        (v,) = _UINT64.unpack_from(self._buffer, self.index)
         self.index += 8
-        return int.from_bytes(v, byteorder="little")
+        return v
 
     def read_int64(self):
-        v = self._buffer[self.index : self.index + 8]
+        (v,) = _INT64.unpack_from(self._buffer, self.index)
         self.index += 8
-        return int.from_bytes(v, byteorder="little", signed=True)
+        return v
 
     def read_float32(self):
-        v = self._buffer[self.index : self.index + 4]
+        (v,) = _FLOAT32.unpack_from(self._buffer, self.index)
         self.index += 4
-        return unpack("<f", v)[0]
+        return v
 
     def read_float64(self):
-        v = self._buffer[self.index : self.index + 8]
+        (v,) = _FLOAT64.unpack_from(self._buffer, self.index)
         self.index += 8
-        return unpack("<d", v)[0]
+        return v
 
     def read_bool(self):
         return self.read_byte() != 0
@@ -134,28 +144,28 @@ class BebopWriter:
         self._buffer.append(val)
 
     def write_uint16(self, val: int):
-        self._buffer += pack("<H", val)
+        self._buffer += _UINT16.pack(val)
 
     def write_int16(self, val: int):
-        self._buffer += pack("<h", val)
+        self._buffer += _INT16.pack(val)
 
     def write_uint32(self, val: int):
-        self._buffer += pack("<I", val)
+        self._buffer += _UINT32.pack(val)
 
     def write_int32(self, val: int):
-        self._buffer += pack("<i", val)
+        self._buffer += _INT32.pack(val)
 
     def write_uint64(self, val: int):
-        self._buffer += pack("<Q", val)
+        self._buffer += _UINT64.pack(val)
 
     def write_int64(self, val: int):
-        self._buffer += pack("<q", val)
+        self._buffer += _INT64.pack(val)
 
     def write_float32(self, val: float):
-        self._buffer += pack("<f", val)
+        self._buffer += _FLOAT32.pack(val)
 
     def write_float64(self, val: float):
-        self._buffer += pack("<d", val)
+        self._buffer += _FLOAT64.pack(val)
 
     def write_bool(self, val: bool):
         self.write_byte(val)
@@ -186,7 +196,7 @@ class BebopWriter:
         return i
 
     def fill_message_length(self, position: int, message_length: int):
-        self._buffer[position:position+4] = message_length.to_bytes(4, "little")
+        _UINT32.pack_into(self._buffer, position, message_length)
 
     def to_list(self):
         return list(self._buffer)
