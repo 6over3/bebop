@@ -6,7 +6,8 @@ def test_fill_message_length_writes_4_bytes():
     writer = BebopWriter()
     length_index = writer.reserve_message_length()
     payload = bytearray(b"\x01" * 10)
-    writer.write_bytes(payload, write_msg_length=False)
+    # Manually write payload since write_bytes now enforces length prefix
+    writer._buffer += payload
 
     # Act: Backfill the correct length into the reserved slot
     writer.fill_message_length(length_index, len(payload))

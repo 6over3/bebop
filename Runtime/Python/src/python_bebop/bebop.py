@@ -174,8 +174,7 @@ class BebopWriter:
     def write_bool(self, val: bool) -> None:
         self._buffer.append(val)
 
-    def write_bytes(self, val: Union[bytes, bytearray, memoryview], write_msg_length: bool = True) -> None:
-        if write_msg_length:
+    def write_bytes(self, val: Union[bytes, bytearray, memoryview]) -> None:
             self._buffer += _UINT32.pack(len(val))
         self._buffer += val
 
@@ -183,7 +182,7 @@ class BebopWriter:
         self.write_bytes(val.encode("utf-8"))
 
     def write_guid(self, guid: UUID) -> None:
-        self.write_bytes(guid.bytes_le, write_msg_length=False)
+        self._buffer += guid.bytes_le
 
     def write_date(self, date: datetime) -> None:
         secs = date.timestamp()
