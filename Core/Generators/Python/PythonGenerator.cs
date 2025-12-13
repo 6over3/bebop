@@ -113,7 +113,7 @@ namespace Core.Generators.Python
             var enumAppendix = isEnum ? ".value" : "";
             return type switch
             {
-                ArrayType at when at.IsBytes() => $"writer.writeBytes({target})",
+                ArrayType at when at.IsBytes() => $"writer.write_bytes({target})",
                 ArrayType at =>
                     $"length{depth} = len({target})" + nl +
                     $"writer.write_uint32(length{depth})" + nl +
@@ -254,7 +254,7 @@ namespace Core.Generators.Python
             var i = GeneratorUtils.LoopVariable(depth);
             return type switch
             {
-                ArrayType at when at.IsBytes() => $"{target} = reader.readBytes()",
+                ArrayType at when at.IsBytes() => $"{target} = reader.read_bytes()",
                 ArrayType at =>
                     $"length{depth} = reader.read_uint32()" + nl +
                     $"{target} = []" + nl +

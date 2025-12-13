@@ -1,5 +1,5 @@
 from schema import Library, Instrument, Album, StudioAlbum, LiveAlbum, Song, Musician
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 def make_lib():
@@ -24,7 +24,7 @@ def make_lib():
 
     adams_apple_album = LiveAlbum()
     adams_apple_album.venueName = "Tunisia"
-    adams_apple_album.concertDate = datetime.fromtimestamp(528205479)
+    adams_apple_album.concertDate = datetime.fromtimestamp(528205479, tz=timezone.utc)
 
     unnamed_song = Song()
     unnamed_song.year = 1965
