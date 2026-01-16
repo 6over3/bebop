@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -455,8 +455,8 @@ namespace Core.Generators.CPlusPlus
                         builder.AppendLine("    return after - before;");
                         builder.AppendLine("  }");
                         builder.AppendLine("");
-                        builder.AppendLine($"  size_t encodeInto(std::vector<uint8_t>& targetBuffer) {{ return {td.Name}::encodeInto(*this, targetBuffer); }}");
-                        builder.AppendLine($"  size_t encodeInto(::bebop::Writer& writer) {{ return {td.Name}::encodeInto(*this, writer); }}");
+                        builder.AppendLine($"  size_t encodeInto(std::vector<uint8_t>& targetBuffer) const {{ return {td.Name}::encodeInto(*this, targetBuffer); }}");
+                        builder.AppendLine($"  size_t encodeInto(::bebop::Writer& writer) const {{ return {td.Name}::encodeInto(*this, writer); }}");
                         builder.AppendLine("");
                         builder.AppendLine($"  static {td.Name} decode(const uint8_t* sourceBuffer, size_t sourceBufferSize) {{");
                         builder.AppendLine($"    {td.Name} result;");
