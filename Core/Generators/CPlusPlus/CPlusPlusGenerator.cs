@@ -485,6 +485,7 @@ namespace Core.Generators.CPlusPlus
                         builder.AppendLine("");
                         builder.AppendLine($"  static size_t decodeInto(::bebop::Reader& reader, {td.Name}& target) {{");
                         builder.Append(CompileDecode(td));
+                        builder.AppendLine("");
                         builder.AppendLine("    return reader.bytesRead();");
                         builder.AppendLine("  }");
                         builder.AppendLine("");
